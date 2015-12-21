@@ -4,7 +4,7 @@ namespace phantomd\filedaemon\models;
 
 use Yii;
 
-class Joblist extends RedisActiveRecord
+class Joblist extends \phantomd\filedaemon\db\ActiveRecord
 {
 
     /**
@@ -25,6 +25,11 @@ class Joblist extends RedisActiveRecord
         self::STATUS_WAIT,
         self::STATUS_WORK,
     ];
+
+    /**
+     * @var integer Количество миллисекунд между повторами на запрос
+     */
+    protected static $sleepTry = 1000;
 
     /**
      * @inheritdoc
@@ -88,7 +93,7 @@ class Joblist extends RedisActiveRecord
      */
     public static function chooseJob($id, $threads = null)
     {
-        $find = self::find()
+        $find = static::find()
             ->where(['id' => $id]);
 
         if ($threads) {
@@ -114,7 +119,7 @@ class Joblist extends RedisActiveRecord
         while (empty($return) && 10 > $attempt) {
             $return = $find->one();
             ++$attempt;
-            usleep(self::$sleepTry);
+            usleep(static::$sleepTry);
         }
         return $return;
     }
@@ -127,10 +132,26 @@ class Joblist extends RedisActiveRecord
      */
     public static function checkByName($name)
     {
-        $find = self::find()
+        $find = static::find()
             ->where(['name' => $name])
             ->exists();
         return $find;
+    }
+
+    /**
+     * Get classname without namespace
+     *
+     * @return string
+     */
+    public static function shortClassName()
+    {
+        $classname = static::className();
+
+        if (preg_match('@\\\\([\w]+)$@', $classname, $matches)) {
+            $classname = $matches[1];
+        }
+
+        return $classname;
     }
 
 }
