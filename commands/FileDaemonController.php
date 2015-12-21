@@ -115,7 +115,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
      */
     protected function doRestart()
     {
-        if (is_file(\Yii::getAlias("@app/config/restart-{$this->configName}"))) {
+        if (is_file(\Yii::getAlias("@app/config/daemons/restart-{$this->configName}"))) {
             \Yii::info('Do restart - start!', __METHOD__ . '(' . __LINE__ . ')');
             foreach ($this->jobListData as $jobId) {
                 $keys = 0;

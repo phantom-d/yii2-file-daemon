@@ -29,7 +29,7 @@ class WatcherDaemonController extends \vyants\daemon\controllers\WatcherDaemonCo
     {
         $this->restart();
         sleep($this->sleep);
-        $jobs = \Yii::getAlias('@app/config/daemons//watcher-jobs.php');
+        $jobs = \Yii::getAlias('@app/config/daemons/watcher-jobs.php');
 
         $currentDate = strtotime(date('Y-m-d 00:00:00'));
         if ($currentDate > $this->currentDate) {
