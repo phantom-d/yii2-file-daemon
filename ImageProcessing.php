@@ -4,7 +4,7 @@ namespace phantomd\filedaemon;
 
 use yii\base\Component;
 use yii\base\ErrorException;
-use app\models\Joblist;
+//use app\models\Joblist;
 
 /**
  * Компонент для работы
@@ -61,6 +61,13 @@ class ImageProcessing extends FileProcessing
         'object_id' => 0,
         'time_dir'  => '',
     ];
+    
+    public function test()
+    {
+        echo '<pre>',
+        '$this(' . __LINE__ . '): ', print_r($this, true), "\n",
+        '</pre>';
+    }
 
     /**
      * Получение объекта для работы с базой данных.

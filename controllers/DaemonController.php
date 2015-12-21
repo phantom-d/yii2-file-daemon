@@ -14,7 +14,7 @@ use yii\web\BadRequestHttpException;
 class DaemonController extends Controller
 {
 
-    use traits\DaemonTrait;
+    use phantomd\filedaemon\traits\DaemonTrait;
 
     private $_shortName = '';
 

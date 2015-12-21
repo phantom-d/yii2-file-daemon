@@ -2,8 +2,14 @@
 
 namespace phantomd\filedaemon;
 
-class Module
+class Module extends \yii\base\Module
 {
+
+    public $db = null;
+
+    public $daemons = null;
+
+    public $secret  = null;
 
     /**
      * @inheritdoc
@@ -13,5 +19,11 @@ class Module
         parent::init();
     }
 
+    public function test()
+    {
+        echo '<pre>',
+        '$this(' . __LINE__ . '): ', print_r($this, true), "\n",
+        '</pre>';
+    }
 
 }

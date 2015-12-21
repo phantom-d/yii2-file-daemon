@@ -1,11 +1,11 @@
 <?php
 
-namespace phantomd\filedaemon\controllers;
+namespace phantomd\filedaemon\commands;
 
 class WatcherDaemonController extends \vyants\daemon\controllers\WatcherDaemonController
 {
 
-    use traits\DaemonTrait;
+    use phantomd\filedaemon\traits\DaemonTrait;
 
     private $currentDate = null;
 
@@ -29,7 +29,7 @@ class WatcherDaemonController extends \vyants\daemon\controllers\WatcherDaemonCo
     {
         $this->restart();
         sleep($this->sleep);
-        $jobs = require(__DIR__ . '/../config/watcher-jobs.php');
+        $jobs = \Yii::getAlias('@app/config/daemons//watcher-jobs.php');
 
         $currentDate = strtotime(date('Y-m-d 00:00:00'));
         if ($currentDate > $this->currentDate) {

@@ -1,6 +1,6 @@
 <?php
 
-namespace phantomd\filedaemon\controllers;
+namespace phantomd\filedaemon\commands;
 
 use yii\base\ErrorException;
 use yii\helpers\FileHelper;
@@ -9,7 +9,7 @@ use app\models\Joblist;
 class ImageDaemonController extends FileDaemonController
 {
 
-    use traits\DaemonTrait;
+    use phantomd\filedaemon\traits\DaemonTrait;
 
     const TABLE_ARC = 'jobsArc';
 

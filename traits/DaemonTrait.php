@@ -37,7 +37,7 @@ trait DaemonTrait
      */
     protected function restart()
     {
-        if (is_file($fileRestart = \Yii::getAlias('@app') . '/config/restart-' . $this->configName)) {
+        if (is_file($fileRestart = \Yii::getAlias('@app/config/daemons/restart-' . $this->configName))) {
             unlink($fileRestart);
             posix_kill(getmypid(), SIGKILL);
         }
