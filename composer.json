@@ -1,0 +1,29 @@
+{
+    "name": "phantom-d/yii2-file-daemon",
+    "description": "Yii2 daemon for the file processing",
+    "type": "yii2-extension",
+    "keywords": ["yii2", "extension", "daemon"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Anton Ermolovich",
+            "email": "phantom-d@yandex.ru"
+        }
+    ],
+    "require": {
+        "yiisoft/yii2": "*",
+        "yiisoft/yii2-redis": "*",
+        "vyants/yii2-daemon": "*"
+    },
+    "repositories": [
+        {
+            "type": "git",
+            "url": "git@gitlab.bnmedia.ru:develop/yii2-file-daemon.git"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "phantomd\\filedaemon\\": ""
+        }
+    }
+}
