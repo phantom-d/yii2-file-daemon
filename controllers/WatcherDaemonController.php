@@ -1,6 +1,6 @@
 <?php
 
-namespace app\components\filedaemon\controllers;
+namespace phantomd\filedaemon\controllers;
 
 class WatcherDaemonController extends \vyants\daemon\controllers\WatcherDaemonController
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace app\components\filedaemon\controllers;
+namespace phantomd\filedaemon\controllers;
 
 use yii\base\ErrorException;
 use yii\helpers\FileHelper;
@@ -632,7 +632,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
                     }
 
                     if ($data) {
-                        $curl = new \app\components\Curl();
+                        $curl = new \phantomd\filedaemon\components\Curl();
                         $curl->setOption(CURLOPT_POSTFIELDS, http_build_query(['data' => $data]));
                         if ($curl->post($job->callback)) {
                             \Yii::info("Send data successful!\n\tTable: {$table}, total: {$resultTotal}, sended: " . count($data) . ", page: {$page}", __METHOD__ . '(' . __LINE__ . ')');

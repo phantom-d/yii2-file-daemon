@@ -17,7 +17,7 @@
  *
  */
 
-namespace app\components\filedaemon\components;
+namespace phantomd\filedaemon\components;
 
 use Yii;
 use yii\base\Component;

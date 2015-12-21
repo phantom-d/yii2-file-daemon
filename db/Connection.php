@@ -1,6 +1,6 @@
 <?php
 
-namespace app\components\filedaemon\db;
+namespace phantomd\filedaemon\db;
 
 use yii\base\Component;
 use yii\db\Exception;

@@ -1,6 +1,6 @@
 <?php
 
-namespace app\components\filedaemon\controllers\traits;
+namespace phantomd\filedaemon\controllers\traits;
 
 use yii\base\NotSupportedException;
 

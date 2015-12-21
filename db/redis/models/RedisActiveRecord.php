@@ -1,6 +1,6 @@
 <?php
 
-namespace app\components\filedaemon\db\redis\models;
+namespace phantomd\filedaemon\models;
 
 use Yii;
 
