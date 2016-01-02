@@ -15,9 +15,7 @@ trait DaemonTrait
 
     public function init()
     {
-        if (empty($this->configName)) {
-            $this->configName = $this->getCommandNameBy($this->shortClassName());
-        }
+        $this->setConfigName();
 
         parent::init();
 
@@ -29,6 +27,13 @@ trait DaemonTrait
                     $this->commands[(int)$value['id']] = $name;
                 }
             }
+        }
+    }
+
+    public function setConfigName()
+    {
+        if (empty($this->configName)) {
+            $this->configName = $this->getCommandNameBy($this->shortClassName());
         }
     }
 
@@ -55,23 +60,6 @@ trait DaemonTrait
                 }
             }
         }
-    }
-
-    /**
-     * Проверка наличия процесса по ID и имени
-     *
-     * @param $pid ID процесса
-     * @param $name Имя процесса
-     * @return bool Статус процесса
-     */
-    public function isProcessRunning($pid, $name = '')
-    {
-        if ('' !== (string)$name) {
-            $name = "| grep -i '{$name}'";
-        }
-        $command = "/usr/bin/env ps -p {$pid} -o args= {$name}";
-        $result  = `{$command}`;
-        return (bool)`/usr/bin/env ps -p {$pid} -o args= {$name}`;
     }
 
     /**
@@ -103,103 +91,9 @@ trait DaemonTrait
         return $this->config;
     }
 
-    protected function getCommandNameBy($className = '')
-    {
-        $command = strtolower(
-            preg_replace_callback(
-                '/(?<!^)(?<![A-Z])[A-Z]{1}/', function ($matches) {
-                return '-' . $matches[0];
-            }, str_replace(['Daemon', 'Controller'], '', (empty($className) ? $this->shortClassName() : $className))
-            )
-        );
-
-        return $command;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    protected function initLogger()
-    {
-        $targets = \Yii::$app->getLog()->targets;
-        foreach ($targets as $target) {
-            $target->enabled = false;
-        }
-        $date        = date('Y-m-d');
-        $logFileName = \Yii::getAlias($this->logDir)
-            . DIRECTORY_SEPARATOR . $this->getCommandNameBy($this->shortClassName())
-            . DIRECTORY_SEPARATOR . $date
-            . DIRECTORY_SEPARATOR . $this->_shortName . '_' . $date . '.log';
-
-        $config          = [
-            'levels'  => ['error', 'warning', 'info'],
-            'logFile' => $logFileName,
-            'logVars' => [],
-            'prefix'  => function() {
-            return '';
-        },
-            'exportInterval' => 1,
-            'enableRotation' => false,
-            'except'         => [
-                'yii\db\*', // Don't include messages from db
-            ],
-        ];
-
-        if (YII_DEBUG) {
-            $config['levels'][] = 'trace';
-            $config['levels'][] = 'profile';
-        }
-
-        $targets['daemon'] = new \yii\log\FileTarget($config);
-
-        \Yii::$app->getLog()->targets = $targets;
-        \Yii::$app->getLog()->init();
-    }
-
     protected function getProcessName()
     {
         return $this->_shortName;
-    }
-
-    /**
-     * Переименование процесса
-     * 
-     * @param string $prefix Префикс к имени процесса
-     * @throws NotSupportedException
-     */
-    protected function renameProcess($prefix = '')
-    {
-        $name = $this->getProcessName();
-        if (false === empty($prefix)) {
-            $name = $prefix . '-' . $name;
-        }
-
-        //rename process
-        if (version_compare(PHP_VERSION, '5.5.0') >= 0) {
-            cli_set_process_title($name);
-        } else {
-            if (function_exists('setproctitle')) {
-                setproctitle($name);
-            } else {
-                throw new NotSupportedException("Can't find cli_set_process_title or setproctitle function");
-            }
-        }
-    }
-
-    /**
-     * Get classname without namespace
-     *
-     * @return string
-     */
-    public function shortClassName()
-    {
-        $classname = $this->className();
-
-        if (preg_match('@\\\\([\w]+)$@', $classname, $matches)) {
-            $classname = $matches[1];
-        }
-
-        return $classname;
     }
 
 }

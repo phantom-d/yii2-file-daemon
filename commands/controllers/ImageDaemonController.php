@@ -1,6 +1,6 @@
 <?php
 
-namespace phantomd\filedaemon\commands;
+namespace phantomd\filedaemon\commands\controllers;
 
 use yii\base\ErrorException;
 use yii\helpers\FileHelper;

@@ -1,6 +1,6 @@
 <?php
 
-namespace phantomd\filedaemon\controllers;
+namespace phantomd\filedaemon\frontend\controllers;
 
 use yii\web\Response;
 use yii\rest\Controller;
