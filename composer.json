@@ -7,13 +7,12 @@
     "authors": [
         {
             "name": "Anton Ermolovich",
-            "email": "phantom-d@yandex.ru"
+            "email": "anton.ermolovich@gmail.com"
         }
     ],
     "require": {
         "yiisoft/yii2": "*",
-        "yiisoft/yii2-redis": "*",
-        "vyants/yii2-daemon": "*"
+        "yiisoft/yii2-redis": "*"
     },
     "repositories": [
         {

@@ -1,10 +1,15 @@
 <?php
 
-namespace phantomd\filedaemon\models;
+namespace phantomd\filedaemon\db\redis\models;
 
 use Yii;
 
-class Joblist extends \phantomd\filedaemon\db\ActiveRecord
+/**
+ * Joblist
+ * 
+ * @author Anton Ermolovich <anton.ermolovich@gmail.com>
+ */
+class Joblist extends \yii\redis\ActiveRecord
 {
 
     /**
@@ -101,57 +106,71 @@ class Joblist extends \phantomd\filedaemon\db\ActiveRecord
                 $find->with('threads');
             } else {
                 $find->with(['threads' => function ($query) use ($threads) {
-                    if (is_array($threads)) {
-                        foreach ($threads as $key => $value) {
-                            if (false === is_numeric($key)) {
-                                $query->andWhere([$key => $value]);
+                        if (is_array($threads)) {
+                            foreach ($threads as $key => $value) {
+                                if (false === is_numeric($key)) {
+                                    $query->andWhere([$key => $value]);
+                                }
                             }
+                        } else {
+                            $query->andWhere($threads);
                         }
-                    } else {
-                        $query->andWhere($threads);
-                    }
-                },]);
+                    },]);
+                }
             }
+
+            $return  = $find->one();
+            $attempt = 0;
+            while (empty($return) && 10 > $attempt) {
+                $return = $find->one();
+                ++$attempt;
+                usleep(static::$sleepTry);
+            }
+            return $return;
         }
 
-        $return  = $find->one();
-        $attempt = 0;
-        while (empty($return) && 10 > $attempt) {
-            $return = $find->one();
-            ++$attempt;
-            usleep(static::$sleepTry);
-        }
-        return $return;
-    }
-
-    /**
-     * Проверка наличия задачи по полю name
-     *
-     * @param string $name Значение поля name в задаче
-     * @return bool
-     */
-    public static function checkByName($name)
-    {
-        $find = static::find()
-            ->where(['name' => $name])
-            ->exists();
-        return $find;
-    }
-
-    /**
-     * Get classname without namespace
-     *
-     * @return string
-     */
-    public static function shortClassName()
-    {
-        $classname = static::className();
-
-        if (preg_match('@\\\\([\w]+)$@', $classname, $matches)) {
-            $classname = $matches[1];
+        /**
+         * Проверка наличия задачи по полю name
+         *
+         * @param string $name Значение поля name в задаче
+         * @return bool
+         */
+        public static function checkByName($name)
+        {
+            $find = static::find()
+                ->where(['name' => $name])
+                ->exists();
+            return $find;
         }
 
-        return $classname;
-    }
+        /**
+         * Get classname without namespace
+         *
+         * @return string
+         */
+        public static function shortClassName()
+        {
+            $classname = static::className();
 
-}
+            if (preg_match('@\\\\([\w]+)$@', $classname, $matches)) {
+                $classname = $matches[1];
+            }
+
+            return $classname;
+        }
+
+        /**
+         * @inheritdoc
+         */
+        public static function getDb()
+        {
+            $connection = \Yii::$app->get('redis' . strtolower(static::shortClassName()));
+            if ($connection && $connection->isActive === false) {
+                $connection->open();
+            }
+
+            return $connection;
+        }
+
+    }
+    

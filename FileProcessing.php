@@ -12,6 +12,8 @@ use app\models\Joblist;
 class FileProcessing extends Component
 {
 
+    protected static $adapter = null;
+
     const CROP_DEFAULT = 'center';
 
     protected $garvity = [
@@ -42,7 +44,7 @@ class FileProcessing extends Component
      *
      * @var mixed
      */
-    private $itemSrcScheme = [
+    private $itemSourceScheme = [
         'command'   => 0,
         'object_id' => 0,
         'url'       => '',
@@ -54,7 +56,7 @@ class FileProcessing extends Component
      *
      * @var mixed
      */
-    private $itemDstScheme = [
+    private $itemResultScheme = [
         'command'   => 0,
         'file_name' => '',
         'image_id'  => 0,
@@ -139,10 +141,10 @@ class FileProcessing extends Component
                 if (strpos($row['item'], '::') === false) {
                     $item = json_decode($row['item'], true);
                 } else {
-                    $item = array_combine(array_keys($this->itemSrcScheme), explode('::', $row['item']));
+                    $item = array_combine(array_keys($this->itemSourceScheme), explode('::', $row['item']));
                 }
                 $prepare = [];
-                foreach ($this->itemSrcScheme as $key => $value) {
+                foreach ($this->itemSourceScheme as $key => $value) {
                     $prepare[$key] = isset($item[$key]) ? $item[$key] : $value;
                 }
                 $item   = $prepare;
@@ -313,7 +315,7 @@ class FileProcessing extends Component
                     foreach ($params as $item) {
                         $result = [];
                         $score  = isset($item['score']) ? (int)$item['score'] : 0;
-                        foreach ($this->itemSrcScheme as $key => $value) {
+                        foreach ($this->itemSourceScheme as $key => $value) {
                             $result[$key] = isset($item[$key]) ? $item[$key] : $value;
                         }
                         if (empty($result['url']) || empty($result['image_id']) || empty($result['object_id'])) {
@@ -373,9 +375,9 @@ class FileProcessing extends Component
         if ($table && empty($params['item']) === false) {
             if ($connectionDb = $this->getConnection($db)) {
                 if (0 === (int)$connectionDb->exists($table) || 'zset' === $connectionDb->type($table)) {
-                    $item    = array_merge($this->itemDstScheme, $params['item']);
+                    $item    = array_merge($this->itemResultScheme, $params['item']);
                     $prepare = [];
-                    foreach ($this->itemDstScheme as $key => $value) {
+                    foreach ($this->itemResultScheme as $key => $value) {
                         $prepare[$key] = isset($item[$key]) ? $item[$key] : $value;
                     }
                     $params['item'] = $prepare;
@@ -610,9 +612,9 @@ class FileProcessing extends Component
                             $curl->setOption($name, $value);
                         }
                         $curl->head($item['item']['url']);
-                        
+
                         if ($curl->responseCode) {
-                            $return =  true;
+                            $return = true;
                         }
                     }
                 } else {
