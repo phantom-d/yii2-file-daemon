@@ -8,6 +8,8 @@ nbproject
 .buildpath
 .project
 .settings
+*.komodoproject
+.komodotools/
 
 # windows thumbnail cache
 Thumbs.db
@@ -27,3 +29,12 @@ composer.phar
 phpunit.phar
 # local phpunit config
 /phpunit.xml
+
+*.bak
+*.log
+composer.phar
+composer.lock
+*.bin
+*.settings
+*.properties
+*.*~
