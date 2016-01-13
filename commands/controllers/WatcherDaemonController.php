@@ -29,7 +29,7 @@ class WatcherDaemonController extends DaemonController
 
     public function init()
     {
-        $this->setConfigName();
+        parent::init();
 
         $pidFile = \Yii::getAlias($this->pidDir) . DIRECTORY_SEPARATOR . $this->shortClassName();
         if (file_exists($pidFile)) {
@@ -41,7 +41,6 @@ class WatcherDaemonController extends DaemonController
 
         $this->currentDate = strtotime(date('Y-m-d 00:00:00'));
         $this->getConfig();
-        parent::init();
     }
 
     /**

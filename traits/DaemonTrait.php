@@ -13,14 +13,14 @@ trait DaemonTrait
 
     protected $configName = '';
 
+    protected $processing = null;
+
     public function init()
     {
-        $this->setConfigName();
-
         parent::init();
 
         $this->getConfig();
-        $this->renewConnections();
+
         if (false === empty($this->config['commands'])) {
             foreach ($this->config['commands'] as $name => $value) {
                 if (isset($value['id']) && false === isset($this->commands[(int)$value['id']])) {
@@ -28,13 +28,16 @@ trait DaemonTrait
                 }
             }
         }
-    }
 
-    public function setConfigName()
-    {
-        if (empty($this->configName)) {
-            $this->configName = $this->getCommandNameBy($this->shortClassName());
+        $type = 'File';
+
+        if (false === empty($this->component)) {
+            $type = ucfirst(strtolower($this->component));
         }
+
+        $component = 'phantomd\\filedaemon\\' . $type . 'Processing';
+
+        $this->processing = new $component(['config' => $this->config]);
     }
 
     /**
@@ -94,52 +97,6 @@ trait DaemonTrait
     protected function getProcessName()
     {
         return $this->_shortName;
-    }
-
-    /**
-     * Get classname without namespace
-     *
-     * @return string
-     */
-    public static function shortClassName()
-    {
-        $classname = static::className();
-
-        if (preg_match('@\\\\([\w]+)$@', $classname, $matches)) {
-            $classname = $matches[1];
-        }
-
-        return $classname;
-    }
-
-    /**
-     * Get command for console running
-     * 
-     * @param string $className Original class name
-     * @param array $replace Array strings for remove
-     * @return string
-     */
-    protected function getCommandNameBy($className = '', $replace = [])
-    {
-        $find = ['Controller'];
-
-        if (false === empty($replace)) {
-            $find = array_merge($find, (array)$replace);
-        }
-
-        $command = strtolower(
-            preg_replace_callback(
-                '/(?<!^)(?<![A-Z])[A-Z]{1}/', function ($matches) {
-                return '-' . $matches[0];
-            }, str_replace($find, '', (empty($className) ? $this->shortClassName() : $className))
-            )
-        );
-
-        if (!empty($this->daemonFolder)) {
-            $command = $this->daemonFolder . DIRECTORY_SEPARATOR . $command;
-        }
-
-        return $command . DIRECTORY_SEPARATOR . 'index';
     }
 
 }

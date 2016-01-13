@@ -12,22 +12,6 @@ use app\models\Joblist;
 class FileProcessing extends Component
 {
 
-    protected static $adapter = null;
-
-    const CROP_DEFAULT = 'center';
-
-    protected $garvity = [
-        'northwest',
-        'north',
-        'northeast',
-        'west',
-        'center',
-        'east',
-        'southwest',
-        'south',
-        'southeast',
-    ];
-
     public $httpUseragent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36';
 
     public $downloader = "/usr/bin/env wget -T 5 -t 1 -q --no-check-certificate --user-agent='%s' -O '%s' '%s' 2>/dev/null";
@@ -39,49 +23,24 @@ class FileProcessing extends Component
         CURLOPT_SSL_VERIFYHOST => false,
     ];
 
-    /**
-     * Схема источника данных
-     *
-     * @var mixed
-     */
-    private $itemSourceScheme = [
-        'command'   => 0,
-        'object_id' => 0,
-        'url'       => '',
-        'image_id'  => 0,
-    ];
+    protected static $adapter = null;
+
+    protected static $config = [];
 
     /**
-     * Схема обработанных данных
-     *
-     * @var mixed
+     * @inheritdoc
      */
-    private $itemResultScheme = [
-        'command'   => 0,
-        'file_name' => '',
-        'image_id'  => 0,
-        'object_id' => 0,
-        'time_dir'  => '',
-    ];
-
-    /**
-     * Получение объекта для работы с базой данных.
-     *
-     * @param string $component Наименование компонента из настроек.
-     * @return object|NULL
-     */
-    public function getConnection($component)
+    public function init()
     {
-        $connection = null;
-        if (\Yii::$app->has($component)) {
-            $connection = \Yii::$app->get($component);
-            $connection->open();
+        parent::init();
+
+        $config = [];
+        
+        if (false === empty($this->config['db'])) {
+            $config['params'] = $this->config['db'];
         }
-        if (false === $connection->isActive) {
-            $connection = null;
-            \Yii::error("Not connected to DB '{$component}'!", __METHOD__ . '(' . __LINE__ . ')');
-        }
-        return $connection;
+        
+        $this->adapter = new db\Connection($config);
     }
 
     /**
@@ -93,7 +52,8 @@ class FileProcessing extends Component
      */
     public function getTables($table = '*', $db = 'redis0')
     {
-        $return       = false;
+        $return = false;
+
         if ($connectionDb = $this->getConnection($db)) {
             if ($table === '') {
                 $table = '*';

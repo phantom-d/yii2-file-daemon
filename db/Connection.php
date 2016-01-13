@@ -4,7 +4,6 @@ namespace phantomd\filedaemon\db;
 
 use yii\base\Component;
 use yii\db\Exception;
-use yii\helpers\Inflector;
 
 /**
  * Connection
@@ -16,31 +15,48 @@ use yii\helpers\Inflector;
 class Connection extends Component
 {
 
-    public $type = 'redis';
+    private $params = [];
 
-    private $_source = null;
-
-    private $_result = null;
-
-    private $_arc = null;
-
-    private $_jobs = null;
+    private $models = [
+        'source' => null,
+        'result' => null,
+        'arc'    => null,
+        'jobs'   => null,
+    ];
 
     function init()
     {
         parent::init();
 
-        $namespace = $this->type . '\\models\\';
+        $defaults = isset($this->params['default']) ? $this->params['default'] : null;
 
-        $source = $namespace . 'Source';
-        $result = $namespace . 'Result';
-        $arc    = $namespace . 'Arc';
-        $jobs   = $namespace . 'Joblist';
+        foreach (array_values($this->models) as $model) {
+            $type   = isset($defaults['type']) ? (string)$defaults['type'] : '';
+            $config = null;
 
-        $this->_source = new $source;
-        $this->_result = new $result;
-        $this->_arc    = new $arc;
-        $this->_jobs   = $jobs;
+            if ($defaults) {
+                if (isset($this->params['merge'][$model])) {
+                    $config = array_merge_recursive($defaults, $this->params['merge'][$model]);
+                } else {
+                    $config = $defaults;
+                }
+            }
+
+            if (isset($this->params['config'][$model])) {
+                $config = $this->params['config'][$model];
+            }
+
+            if ($config) {
+                if (empty($config['type'])) {
+                    $message = 'Incorrect parameter `type` for "' . $model . '"';
+                    \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
+                    throw new Exception($message);
+                }
+
+                \Yii::$app->set('filedaemon-' . $model, $config['db']);
+                $this->models[$model] = $config['type'] . '\\models\\' . ucfirst($model);
+            }
+        }
     }
 
 }

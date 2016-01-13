@@ -1,6 +1,6 @@
 <?php
 
-namespace phantomd\filedaemon\db;
+namespace phantomd\filedaemon\db\redis;
 
 use yii\base\Component;
 use yii\db\Exception;
@@ -94,26 +94,6 @@ class Connection extends Component
             \Yii::error("Incorrect params!<br>\n" . var_export($args, true), __METHOD__ . '(' . __LINE__ . ')');
         }
         return $return;
-    }
-
-    /**
-     * Получение объекта для работы с базой данных.
-     *
-     * @param string $component Наименование компонента из настроек.
-     * @return object|NULL
-     */
-    public function getConnection($component)
-    {
-        $connection = null;
-        if (\Yii::$app->has($component)) {
-            $connection = \Yii::$app->get($component);
-            $connection->open();
-        }
-        if (false === $connection->isActive) {
-            $connection = null;
-            \Yii::error("Not connected to DB '{$component}'!", __METHOD__ . '(' . __LINE__ . ')');
-        }
-        return $connection;
     }
 
     /**
@@ -569,112 +549,6 @@ class Connection extends Component
         } else {
             $args = func_get_args();
             \Yii::error("Incorrect params!<br>\n" . var_export($args, true), __METHOD__ . '(' . __LINE__ . ')');
-        }
-        return $return;
-    }
-
-    /**
-     * Создание списка задач для работы в соответствии с имеющимися данными в источнике.
-     *
-     * @param string $db Исходная база данных.
-     * @param string $checkDb Проверочная база данных.
-     * @return boolean Список создан и находится в режиме ожидания или FALSE
-     */
-    public function createJoblist($db = 'redis0', $checkDb = 'redisjoblist')
-    {
-        $return = false;
-        if ($result = $this->getTables('*', $db)) {
-            $jobsId = [];
-            if (is_array($result)) {
-                foreach ($result as $value) {
-                    $createJob = false;
-                    $callback  = null;
-
-                    if ($job = Joblist::chooseJob(md5($value))) {
-                        $callback = $job->callback;
-                        if (Joblist::STATUS_COMPLETE === (int)$job->status) {
-                            $job->status = Joblist::STATUS_PREPARE;
-                            $resultJob   = $job->save();
-                        }
-                        if (Joblist::STATUS_ERROR === (int)$job->status) {
-                            $job->status = Joblist::STATUS_PREPARE;
-                            $resultJob   = $job->save();
-                        }
-
-                        if (Joblist::STATUS_PREPARE === (int)$job->status) {
-                            $createJob = true;
-                        }
-                    }
-
-                    \Yii::trace($createJob, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '--- $createJob');
-
-                    if ($createJob && $this->createJob($value, $callback, $db)) {
-                        $jobsId[] = md5($value);
-                    }
-                }
-            }
-
-            \Yii::trace($jobsId, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '--- $jobsId');
-
-            if ($jobsId) {
-                $jobList = Joblist::findAll($jobsId);
-                if ($jobList) {
-                    foreach ($jobList as $job) {
-                        if (Joblist::STATUS_PREPARE === (int)$job->status) {
-                            $job->status = Joblist::STATUS_WAIT;
-                            $job->save();
-                        }
-                    }
-                }
-                $return = true;
-            }
-        }
-        return $return;
-    }
-
-    /**
-     * Добавление задачи в Redis DB
-     * 
-     * @param string $table Наименование ключа в RedisDB
-     * @param string $callback Ссылка для отправки результатов обработки
-     * @param string $db Исходная база данных.
-     * @param int $status Статус по умолчанию
-     * @return boolean
-     */
-    public function createJob($table, $callback, $db = 'redis0', $status = Joblist::STATUS_PREPARE)
-    {
-        $return = false;
-
-        if (empty($callback)) {
-            return $return;
-        }
-
-        $countTotal = (int)$this->getCount($table);
-
-        if ($countTotal > 0) {
-            $params = [
-                'id'           => md5($table),
-                'name'         => $table,
-                'callback'     => $callback,
-                'status'       => ($this->checkSourceAccess($table, $db) ? $status : Joblist::STATUS_ERROR),
-                'total'        => $countTotal,
-                'time_elapsed' => 0,
-                'complete'     => 0,
-            ];
-
-            if ($job = Joblist::chooseJob(md5($table))) {
-                if ($job->statusWork) {
-                    $params['status'] = $job->status;
-                }
-                $job->setAttributes($params);
-            } else {
-                $params['time_create'] = time();
-
-                $job = new Joblist($params);
-            }
-            if ($job->save()) {
-                $return = true;
-            }
         }
         return $return;
     }

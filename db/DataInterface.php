@@ -12,19 +12,19 @@ interface DataInterface
 
     public static function getDb();
 
-    public function getData($remove = false);
+    public static function getData($remove = false);
 
-    public function setData($params, $arc = false);
+    public static function setData($params, $arc = false);
 
-    public function getJobs();
+    public static function getJobs();
 
-    public function renameJob($source, $target);
+    public static function renameJob($source, $target);
 
-    public function removeJobData();
+    public static function removeJobData();
 
-    public function getCount();
+    public static function getCount();
 
-    public function getOne($remove = false);
+    public static function getOne($remove = false);
 
-    public function getAll();
+    public static function getAll();
 }

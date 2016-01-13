@@ -88,6 +88,7 @@ abstract class DaemonController extends Controller
         pcntl_signal(SIGCHLD, ['phantomd\filedaemon\commands\controllers', 'signalHandler']);
 
         $this->shortName = $this->shortClassName();
+        $this->setConfigName();
     }
 
     /**
@@ -294,7 +295,7 @@ abstract class DaemonController extends Controller
             if (file_exists($this->getPidPath())) {
                 @unlink($this->getPidPath());
             } else {
-                \Yii::error('Can\'t unlink pid file ' . $this->getPidPath());
+                \Yii::error("Can't unlink pid file " . $this->getPidPath());
             }
 
             return self::EXIT_CODE_NORMAL;
@@ -482,6 +483,13 @@ abstract class DaemonController extends Controller
         }
 
         return $command . DIRECTORY_SEPARATOR . 'index';
+    }
+
+    public function setConfigName()
+    {
+        if (empty($this->configName)) {
+            $this->configName = $this->getCommandNameBy($this->getProcessName());
+        }
     }
 
     public function getPidPath()

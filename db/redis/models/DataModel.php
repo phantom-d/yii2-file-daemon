@@ -4,6 +4,7 @@ namespace phantomd\filedaemon\db\redis\models;
 
 use Yii;
 use yii\base\Model;
+use yii\base\NotSupportedException;
 
 /**
  * DataModel
@@ -27,50 +28,66 @@ class DataModel extends Model implements \phantomd\filedaemon\db\DataInterface
     public static function getDb()
     {
         if (empty(static::$db)) {
-            static::$db = new \yii\redis\Connection(static::$dbConfig);
+            static::$db = \Yii::$app->get('filedaemon-' . strtolower(static::shortClassName()));
         }
 
         return static::$db;
     }
 
-    public function getAll()
+    /**
+     * Get classname without namespace
+     *
+     * @return string
+     */
+    public static function shortClassName()
     {
-        
+        $classname = static::className();
+
+        if (preg_match('@\\\\([\w]+)$@', $classname, $matches)) {
+            $classname = $matches[1];
+        }
+
+        return $classname;
     }
 
-    public function getCount()
+    public static function getAll()
     {
-        
+        throw new NotSupportedException();
     }
 
-    public function getData($remove = false)
+    public static function getCount()
     {
-        
+        throw new NotSupportedException();
     }
 
-    public function getJobs($filter)
+    public static function getData($remove = false)
     {
-        
+        throw new NotSupportedException();
     }
 
-    public function getOne($remove = false)
+    public static function getJobs()
     {
-        
+        throw new NotSupportedException();
     }
 
-    public function removeJobData()
+    public static function getOne($remove = false)
     {
-        
+        throw new NotSupportedException();
     }
 
-    public function renameJob($source, $target)
+    public static function removeJobData()
     {
-        
+        throw new NotSupportedException();
     }
 
-    public function setData($params, $arc = false)
+    public static function renameJob($source, $target)
     {
-        
+        throw new NotSupportedException();
+    }
+
+    public static function setData($params, $arc = false)
+    {
+        throw new NotSupportedException();
     }
 
 }

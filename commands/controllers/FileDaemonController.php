@@ -43,6 +43,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
      */
     public $maxChildProcesses = 400;
 
+    protected $processing = null;
     /**
      * @inheritdoc
      */
@@ -93,7 +94,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
             foreach ($tables as $table) {
                 $jobId  = '';
                 $params = explode('::', $table);
-                $count = count($params);
+                $count  = count($params);
 
                 if (1 < $count) {
                     $jobId = array_pop($params);
@@ -285,26 +286,20 @@ class FileDaemonController extends \vyants\daemon\DaemonController
                 \Yii::trace(($job ? $job->toArray() : $job), __METHOD__ . '(' . __LINE__ . ')');
 
                 $doJob = $doJob && $job && $job->statusWork;
-
-                if (false === $doJob || $job->complete === $job->total) {
-                    $params = [
-                        'time_end' => time(),
-                    ];
-
-                    if ($job->complete === $job->total) {
-                        $params['status'] = Joblist::STATUS_COMPLETE;
-                    }
-
-                    $job = Joblist::chooseJob($jobId);
-
-                    $job->setAttributes($params);
-                    $job->save();
-
-                    $doJob = false;
-                } else {
-                    $doJob = true;
-                }
             }
+
+            $params = [
+                'time_end' => time(),
+            ];
+
+            if ($job->complete === $job->total) {
+                $params['status'] = Joblist::STATUS_COMPLETE;
+            }
+
+            $job = Joblist::chooseJob($jobId);
+
+            $job->setAttributes($params);
+            $job->save();
 
             $this->doTransfer($jobId);
         }
