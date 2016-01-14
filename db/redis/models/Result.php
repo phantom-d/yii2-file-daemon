@@ -2,14 +2,12 @@
 
 namespace phantomd\filedaemon\db\redis\models;
 
-use Yii;
-
 /**
  * Result
  * 
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
-class Result extends DataModel
+class Result extends SortedsetModel
 {
 
     /**
@@ -20,7 +18,7 @@ class Result extends DataModel
         return [
             [['object_id', 'file_name', 'time_dir',], 'required'],
             [['command', 'object_id', 'image_id', 'file_name', 'time_dir',], 'string'],
-            [['command', 'object_id', 'image_id',], 'default', 'value' => 0],
+            [['command', 'object_id', 'image_id', 'score',], 'default', 'value' => 0],
             [['file_name', 'time_dir',], 'default', 'value' => ''],
         ];
     }
@@ -36,6 +34,7 @@ class Result extends DataModel
             'image_id',
             'file_name',
             'time_dir',
+            'score',
         ];
     }
 
@@ -50,6 +49,7 @@ class Result extends DataModel
             'image_id'  => \Yii::t('app', 'Image ID'),
             'file_name' => \Yii::t('app', 'File name'),
             'time_dir'  => \Yii::t('app', 'Time directory'),
+            'score'     => \Yii::t('app', 'Sort'),
         ];
     }
 

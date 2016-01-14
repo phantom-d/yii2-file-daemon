@@ -2,15 +2,12 @@
 
 namespace phantomd\filedaemon\db\redis\models;
 
-use Yii;
-use yii\base\NotSupportedException;
-
 /**
- * Arc
+ * Arcresult
  * 
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
-class Arc extends DataModel
+class Arcresult extends HashModel
 {
 
     /**

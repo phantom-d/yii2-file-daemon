@@ -9,7 +9,7 @@ use Yii;
  * 
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
-class Jobs extends \yii\redis\ActiveRecord implements \phantomd\filedaemon\db\DataInterface
+class Jobs extends ActiveRecord
 {
 
     /**
@@ -30,27 +30,6 @@ class Jobs extends \yii\redis\ActiveRecord implements \phantomd\filedaemon\db\Da
         self::STATUS_WAIT,
         self::STATUS_WORK,
     ];
-
-    /**
-     * @var integer Количество миллисекунд между повторами на запрос
-     */
-    protected static $sleepTry = 1000;
-
-    protected static $dbConfig = null;
-
-    protected static $db = null;
-
-    /**
-     * @inheritdoc
-     */
-    public static function getDb()
-    {
-        if (empty(static::$db)) {
-            static::$db = \Yii::$app->get('filedaemon-jobs');
-        }
-
-        return static::$db;
-    }
 
     /**
      * @inheritdoc
@@ -105,63 +84,12 @@ class Jobs extends \yii\redis\ActiveRecord implements \phantomd\filedaemon\db\Da
         return in_array((int)$this->status, $this->allowWork);
     }
 
-    /**
-     * Получение задачи
-     *
-     * @param string $id ID задачи
-     * @return mixed Объект с данными задачи | NULL
-     */
-    public static function chooseJob($id)
-    {
-        $find = static::find()
-            ->where(['id' => $id]);
-
-        $return  = $find->one();
-        $attempt = 0;
-        while (empty($return) && 10 > $attempt) {
-            $return = $find->one();
-            ++$attempt;
-            usleep(static::$sleepTry);
-        }
-        return $return;
-    }
-
-    public static function getAll()
+    public static function getAll($params = array())
     {
         
     }
 
-    public static function getCount()
-    {
-        
-    }
-
-    public static function getData($remove = false)
-    {
-        
-    }
-
-    public static function getJobs()
-    {
-        
-    }
-
-    public static function getOne($remove = false)
-    {
-        
-    }
-
-    public static function removeJobData()
-    {
-        
-    }
-
-    public static function renameJob($source, $target)
-    {
-        
-    }
-
-    public static function setData($params, $arc = false)
+    public static function getOne($params = array())
     {
         
     }

@@ -5,6 +5,8 @@ namespace phantomd\filedaemon\commands\controllers;
 use yii\base\NotSupportedException;
 use yii\console\Controller;
 use yii\helpers\Console;
+use yii\helpers\Inflector;
+use yii\helpers\StringHelper;
 
 /**
  * Class DaemonController
@@ -444,13 +446,7 @@ abstract class DaemonController extends Controller
      */
     public function shortClassName()
     {
-        $classname = $this->className();
-
-        if (preg_match('@\\\\([\w]+)$@', $classname, $matches)) {
-            $classname = $matches[1];
-        }
-
-        return $classname;
+        return StringHelper::basename(get_called_class());
     }
 
     /**
@@ -464,21 +460,15 @@ abstract class DaemonController extends Controller
     {
         $find = ['Controller'];
 
+        $className = empty($className) ? $this->shortClassName() : (string)$className;
+
         if (false === empty($replace)) {
             $find = array_merge($find, (array)$replace);
         }
 
-        $command = strtolower(
-            preg_replace_callback(
-                '/(?<!^)(?<![A-Z])[A-Z]{1}/',
-                function ($matches) {
-                    return '-' . $matches[0];
-                },
-                str_replace($find, '', (empty($className) ? $this->shortClassName() : $className))
-            )
-        );
+        $command = Inflector::camel2id(str_replace($find, '', $className));
 
-        if (!empty($this->daemonFolder)) {
+        if (false === empty($this->daemonFolder)) {
             $command = $this->daemonFolder . DIRECTORY_SEPARATOR . $command;
         }
 
