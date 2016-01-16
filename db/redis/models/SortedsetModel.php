@@ -18,7 +18,7 @@ class SortedsetModel extends ActiveModel
     /**
      * Получение одной записи
      *
-     * @param string $params[table] Наименование ключа в RedisDB
+     * @param string $params[source_id] Наименование ключа в RedisDB
      * @param bool $params[remove] Удалять запись после получения.
      * @return mixed
      * @throws InvalidParamException
@@ -26,29 +26,29 @@ class SortedsetModel extends ActiveModel
     public static function getOne($params = [])
     {
         $params = [
-            'table'  => isset($params['table']) ? (string)$params['table'] : '',
-            'remove' => isset($params['remove']) ? (bool)$params['remove'] : false,
+            'source_id' => isset($params['source_id']) ? (string)$params['source_id'] : '',
+            'remove'    => isset($params['remove']) ? (bool)$params['remove'] : false,
         ];
 
-        if ('' === $params['table']) {
-            throw new InvalidParamException(Yii::t('app', "Parameter 'table' cannot be blank."));
+        if ('' === $params['source_id']) {
+            throw new InvalidParamException(Yii::t('app', "Parameter 'source_id' cannot be blank."));
         }
 
         $model = new static;
         $db    = $model->getDb();
 
-        if (false === $db->exists($params['table'])) {
-            Yii::error(Yii::t('app', "Table not exists: {table}!", $params), __METHOD__ . '(' . __LINE__ . ')');
+        if (false === $db->exists($params['source_id'])) {
+            Yii::error(Yii::t('app', "source_id not exists: {source_id}!", $params), __METHOD__ . '(' . __LINE__ . ')');
             return false;
         }
 
-        if ($model->type !== $db->type($params['table'])) {
-            Yii::error(Yii::t('app', "Incorrect type of table '{table}'! Must be sorted sets!", $params), __METHOD__ . '(' . __LINE__ . ')');
+        if ($model->type !== $db->type($params['source_id'])) {
+            Yii::error(Yii::t('app', "Incorrect type of source_id '{source_id}'! Must be sorted sets!", $params), __METHOD__ . '(' . __LINE__ . ')');
             return false;
         }
 
-        $script = "local element = redis.pcall('ZRANGEBYSCORE', '{$params['table']}', '-inf', '+inf', 'WITHSCORES', 'LIMIT' , '0' , '1')"
-            . ($params['remove'] ? " redis.pcall('ZREM', '{$params['table']}', element[1])" : '')
+        $script = "local element = redis.pcall('ZRANGEBYSCORE', '{$params['source_id']}', '-inf', '+inf', 'WITHSCORES', 'LIMIT' , '0' , '1')"
+            . ($params['remove'] ? " redis.pcall('ZREM', '{$params['source_id']}', element[1])" : '')
             . " return element";
 
         $result = $db->eval($script, 0);
@@ -69,41 +69,41 @@ class SortedsetModel extends ActiveModel
     /**
      * Получение списка записей
      * 
-     * @param string $params['table'] Наименование ключа в RedisDB
-     * @param integer $params['limit'] Количество.
-     * @param integer $params['page'] Номер страницы.
+     * @param string $params[source_id] Наименование ключа в RedisDB
+     * @param integer $params[limit] Количество.
+     * @param integer $params[page] Номер страницы.
      * @throws InvalidParamException
      * @return mixed
      */
     public static function getAll($params = [])
     {
         $params = [
-            'table' => isset($params['table']) ? (string)$params['table'] : '',
-            'limit' => isset($params['limit']) ? (int)$params['limit'] : 0,
-            'page'  => isset($params['page']) ? (int)$params['page'] : 0,
+            'source_id' => isset($params['source_id']) ? (string)$params['source_id'] : '',
+            'limit'     => isset($params['limit']) ? (int)$params['limit'] : 0,
+            'page'      => isset($params['page']) ? (int)$params['page'] : 0,
         ];
 
         $return = [];
 
-        if ('' === $params['table']) {
-            throw new InvalidParamException(Yii::t('app', "Parameter 'table' cannot be blank."));
+        if ('' === $params['source_id']) {
+            throw new InvalidParamException(Yii::t('app', "Parameter 'source_id' cannot be blank."));
         }
 
         $model = new static;
         $db    = $model->getDb();
 
         if (false === $db->exists($params['table'])) {
-            Yii::error(Yii::t('app', "Table not exists: {table}!", $params), __METHOD__ . '(' . __LINE__ . ')');
+            Yii::error(Yii::t('app', "source_id not exists: {source_id}!", $params), __METHOD__ . '(' . __LINE__ . ')');
             return false;
         }
 
-        if ($model->type !== $db->type($params['table'])) {
-            Yii::error(Yii::t('app', "Incorrect type of table '{table}'! Must be sorted sets!", $params), __METHOD__ . '(' . __LINE__ . ')');
+        if ($model->type !== $db->type($params['source_id'])) {
+            Yii::error(Yii::t('app', "Incorrect type of source_id '{source_id}'! Must be sorted sets!", $params), __METHOD__ . '(' . __LINE__ . ')');
             return false;
         }
 
         $query = [
-            $params['table'], //
+            $params['source_id'], //
             '-inf', '+inf', //
             'WITHSCORES',
         ];

@@ -18,7 +18,7 @@ class HashModel extends ActiveModel
     /**
      * Получение одной записи
      *
-     * @param string $params[table] Наименование ключа в RedisDB
+     * @param string $params[source_id] Наименование ключа в RedisDB
      * @param string $params[field] Наименование поля
      * @throws InvalidParamException
      * @return mixed
@@ -26,13 +26,13 @@ class HashModel extends ActiveModel
     public static function getOne($params = [])
     {
         $params = [
-            'table'  => isset($params['table']) ? (string)$params['table'] : static::tableName(),
-            'field' => isset($params['field']) ? (string)$params['field'] : '',
+            'source_id' => isset($params['source_id']) ? (string)$params['source_id'] : static::tableName(),
+            'field'     => isset($params['field']) ? (string)$params['field'] : '',
         ];
 
         $errors = [];
-        if ('' === $params['table']) {
-            $errors[] = Yii::t('app', "Parameter 'table' cannot be blank.");
+        if ('' === $params['source_id']) {
+            $errors[] = Yii::t('app', "Parameter 'source_id' cannot be blank.");
         }
 
         if ('' === $params['field']) {
@@ -46,17 +46,17 @@ class HashModel extends ActiveModel
         $model = new static;
         $db    = $model->getDb();
 
-        if (false === $db->exists($params['table'])) {
-            Yii::error(Yii::t('app', "Table not exists: {table}!", $params), __METHOD__ . '(' . __LINE__ . ')');
+        if (false === $db->exists($params['source_id'])) {
+            Yii::error(Yii::t('app', "source_id not exists: {source_id}!", $params), __METHOD__ . '(' . __LINE__ . ')');
             return false;
         }
 
-        if ($model->type !== $db->type($params['table'])) {
-            Yii::error(Yii::t('app', "Incorrect type of table '{table}'! Must be hash!", $params), __METHOD__ . '(' . __LINE__ . ')');
+        if ($model->type !== $db->type($params['source_id'])) {
+            Yii::error(Yii::t('app', "Incorrect type of source_id '{source_id}'! Must be hash!", $params), __METHOD__ . '(' . __LINE__ . ')');
             return false;
         }
 
-        $result = $db->hget($params['table'], $params['field']);
+        $result = $db->hget($params['source_id'], $params['field']);
         if ($result) {
             $model->setAttributes(['name' => $params['field'], 'path' => $result]);
             $model->setIsNewRecord(false);
@@ -74,7 +74,7 @@ class HashModel extends ActiveModel
     /**
      * Получение списка записей
      * 
-     * @param string $params[table] Наименование ключа в RedisDB
+     * @param string $params[source_id] Наименование ключа в RedisDB
      * @param string $params[fields] Массив наименований полей
      * @throws InvalidParamException
      * @return mixed
@@ -82,31 +82,31 @@ class HashModel extends ActiveModel
     public static function getAll($params = [])
     {
         $params = [
-            'table'  => isset($params['table']) ? (string)$params['table'] : static::tableName(),
-            'fields' => isset($params['fields']) ? array_filter((array)$params['fields']) : [],
+            'source_id' => isset($params['source_id']) ? (string)$params['source_id'] : static::tableName(),
+            'fields'    => isset($params['fields']) ? array_filter((array)$params['fields']) : [],
         ];
 
         $return = [];
 
-        if ('' === $params['table']) {
-            throw new InvalidParamException(Yii::t('app', "Parameter 'table' cannot be blank."));
+        if ('' === $params['source_id']) {
+            throw new InvalidParamException(Yii::t('app', "Parameter 'source_id' cannot be blank."));
         }
 
         $model = new static;
         $db    = $model->getDb();
 
-        if (false === $db->exists($params['table'])) {
-            Yii::error(Yii::t('app', "Table not exists: {table}!", $params), __METHOD__ . '(' . __LINE__ . ')');
+        if (false === $db->exists($params['source_id'])) {
+            Yii::error(Yii::t('app', "source_id not exists: {source_id}!", $params), __METHOD__ . '(' . __LINE__ . ')');
             return false;
         }
 
-        if ($model->type !== $db->type($params['table'])) {
-            Yii::error(Yii::t('app', "Incorrect type of table '{table}'! Must be hash!", $params), __METHOD__ . '(' . __LINE__ . ')');
+        if ($model->type !== $db->type($params['source_id'])) {
+            Yii::error(Yii::t('app', "Incorrect type of source_id '{source_id}'! Must be hash!", $params), __METHOD__ . '(' . __LINE__ . ')');
             return false;
         }
 
         $query = [
-            $params['table'],
+            $params['source_id'],
         ];
 
         if (empty($params['fields'])) {

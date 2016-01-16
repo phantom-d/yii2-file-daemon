@@ -142,7 +142,7 @@ class Connection extends Component
      * @param string $db Исходная база данных.
      * @return mixed|FALSE Массив ключей из RedisDB
      */
-    public function getTables($table = '*', $db = 'redis0')
+    public function getList($params = [])
     {
         $return = false;
 
