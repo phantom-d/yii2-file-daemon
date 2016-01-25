@@ -97,4 +97,14 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
         throw new NotSupportedException();
     }
 
+    public static function getGroups($params = [])
+    {
+        throw new NotSupportedException();
+    }
+
+    public static function getTables($params = [])
+    {
+        throw new NotSupportedException();
+    }
+
 }

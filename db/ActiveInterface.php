@@ -27,4 +27,8 @@ interface ActiveInterface
     public static function getOne($params = []);
 
     public static function getAll($params = []);
+
+    public static function getGroups($params = []);
+
+    public static function getTables($params = []);
 }

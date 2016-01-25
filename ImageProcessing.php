@@ -2,7 +2,6 @@
 
 namespace phantomd\filedaemon;
 
-use yii\base\Component;
 use yii\base\ErrorException;
 //use app\models\Joblist;
 
@@ -67,45 +66,6 @@ class ImageProcessing extends FileProcessing
         echo '<pre>',
         '$this(' . __LINE__ . '): ', print_r($this, true), "\n",
         '</pre>';
-    }
-
-    /**
-     * Получение объекта для работы с базой данных.
-     *
-     * @param string $component Наименование компонента из настроек.
-     * @return object|NULL
-     */
-    public function getConnection($component)
-    {
-        $connection = null;
-        if (\Yii::$app->has($component)) {
-            $connection = \Yii::$app->get($component);
-            $connection->open();
-        }
-        if (false === $connection->isActive) {
-            $connection = null;
-            \Yii::error("Not connected to DB '{$component}'!", __METHOD__ . '(' . __LINE__ . ')');
-        }
-        return $connection;
-    }
-
-    /**
-     * Получения списка ключей из RedisDB
-     *
-     * @param string $table Паттерн ключа в RedisDB.
-     * @param string $db Исходная база данных.
-     * @return mixed|FALSE Массив ключей из RedisDB
-     */
-    public function getTables($table = '*', $db = 'redis0')
-    {
-        $return       = false;
-        if ($connectionDb = $this->getConnection($db)) {
-            if ($table === '') {
-                $table = '*';
-            }
-            $return = $connectionDb->keys($table);
-        }
-        return $return;
     }
 
     /**

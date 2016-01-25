@@ -2,15 +2,18 @@
 
 namespace phantomd\filedaemon;
 
-use yii\base\Component;
 use yii\base\ErrorException;
 use app\models\Joblist;
 
 /**
  * Компонент для работы
  */
-class FileProcessing extends Component
+class FileProcessing extends \yii\base\Component
 {
+
+    protected static $adapter = null;
+
+    public $config = null;
 
     public $httpUseragent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36';
 
@@ -23,10 +26,6 @@ class FileProcessing extends Component
         CURLOPT_SSL_VERIFYHOST => false,
     ];
 
-    protected static $adapter = null;
-
-    protected static $config = [];
-
     /**
      * @inheritdoc
      */
@@ -34,33 +33,19 @@ class FileProcessing extends Component
     {
         parent::init();
 
-        $config = [];
-        
-        if (false === empty($this->config['db'])) {
-            $config['params'] = $this->config['db'];
+        if (empty($this->config['db'])) {
+            $message = 'Incorrect param `db`!';
+            \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
+            throw new InvalidParamException($message);
         }
-        
-        $this->adapter = new db\Connection($config);
+
+        static::$adapter = new db\Connection(['params' => $this->config['db']]);
+
     }
 
-    /**
-     * Получения списка ключей из RedisDB
-     *
-     * @param string $table Паттерн ключа в RedisDB.
-     * @param string $db Исходная база данных.
-     * @return mixed|FALSE Массив ключей из RedisDB
-     */
-    public function getTables($table = '*', $db = 'redis0')
+    public function __call($name, $params)
     {
-        $return = false;
-
-        if ($connectionDb = $this->getConnection($db)) {
-            if ($table === '') {
-                $table = '*';
-            }
-            $return = $connectionDb->keys($table);
-        }
-        return $return;
+        return call_user_func_array([static::$adapter, $name], $params);
     }
 
     /**

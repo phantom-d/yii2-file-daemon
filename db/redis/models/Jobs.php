@@ -40,7 +40,7 @@ class Jobs extends ActiveRecord
             [['id'], 'unique'],
             [['time_elapsed', 'time_per_item', 'time_to_left',], 'double'],
             [['pid', 'status', 'total', 'complete', 'errors', 'time_create', 'time_end',], 'integer'],
-            [['name', 'id', 'callback'], 'string'],
+            [['name', 'id', 'callback', 'group'], 'string'],
             [
                 'callback',
                 'url',
@@ -61,6 +61,7 @@ class Jobs extends ActiveRecord
             'id',
             'pid',
             'name',
+            'group',
             'callback',
             'status',
             'total',
@@ -74,6 +75,26 @@ class Jobs extends ActiveRecord
         ];
     }
 
+    public function beforeSave($insert)
+    {
+        if ('' === (string)$this->group) {
+            $this->group = (string)explode('::', $this->name)[0];
+        }
+        
+        if (empty($this->time_create)) {
+            $this->time_create = time();
+        }
+
+        return parent::beforeSave($insert);
+    }
+    
+    public function afterFind()
+    {
+        if ('' === (string)$this->group) {
+            $this->group = (string)explode('::', $this->name)[0];
+        }
+    }
+
     /**
      * Получение статуса текущей задачи из списка разрешённых для работы статусов
      *
@@ -82,16 +103,6 @@ class Jobs extends ActiveRecord
     public function getStatusWork()
     {
         return in_array((int)$this->status, $this->allowWork);
-    }
-
-    public static function getAll($params = array())
-    {
-        
-    }
-
-    public static function getOne($params = array())
-    {
-        
     }
 
 }

@@ -15,6 +15,8 @@ trait DaemonTrait
 
     protected $processing = null;
 
+    protected $component  = null;
+
     public function init()
     {
         parent::init();
@@ -29,15 +31,7 @@ trait DaemonTrait
             }
         }
 
-        $type = 'File';
-
-        if (false === empty($this->component)) {
-            $type = ucfirst(strtolower($this->component));
-        }
-
-        $component = 'phantomd\\filedaemon\\' . $type . 'Processing';
-
-        $this->processing = new $component(['config' => $this->config]);
+        $this->component = \phantomd\filedaemon\Component::init($this->config);
     }
 
     /**

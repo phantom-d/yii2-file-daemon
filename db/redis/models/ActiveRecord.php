@@ -63,4 +63,14 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
         throw new NotSupportedException();
     }
 
+    public static function getGroups($params = array())
+    {
+        throw new NotSupportedException();
+    }
+
+    public static function getTables($params = array())
+    {
+        throw new NotSupportedException();
+    }
+
 }

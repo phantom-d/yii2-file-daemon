@@ -26,8 +26,9 @@ class SortedsetModel extends ActiveModel
     public static function getOne($params = [])
     {
         $params = [
-            'table'  => isset($params['table']) ? (string)$params['table'] : '',
-            'remove' => isset($params['remove']) ? (bool)$params['remove'] : false,
+            'table'   => isset($params['table']) ? (string)$params['table'] : '',
+            'remove'  => isset($params['remove']) ? (bool)$params['remove'] : false,
+            'asArray' => empty($params['asArray']) ? false : (bool)$params['asArray'],
         ];
 
         if ('' === $params['table']) {
@@ -53,14 +54,16 @@ class SortedsetModel extends ActiveModel
 
         $result = $db->eval($script, 0);
         if ($result) {
-            $model->setAttributes(array_merge(json_decode($result[0], true), ['score' => $result[1]]));
-            $model->setIsNewRecord(false);
+            $attributes = array_merge(json_decode($result[0], true), ['score' => $result[1]]);
+            if (empty($params['asArray'])) {
+                $model->setAttributes($attributes);
+                $model->setIsNewRecord(false);
+                $model->afterFind(true);
+            } else {
+                $model = $attributes;
+            }
         } else {
             $model = null;
-        }
-
-        if (false === $model->afterFind(true)) {
-            return false;
         }
 
         return $model;
@@ -78,9 +81,10 @@ class SortedsetModel extends ActiveModel
     public static function getAll($params = [])
     {
         $params = [
-            'table' => isset($params['table']) ? (string)$params['table'] : '',
-            'limit' => isset($params['limit']) ? (int)$params['limit'] : 0,
-            'page'  => isset($params['page']) ? (int)$params['page'] : 0,
+            'table'   => isset($params['table']) ? (string)$params['table'] : '',
+            'limit'   => isset($params['limit']) ? (int)$params['limit'] : 0,
+            'page'    => isset($params['page']) ? (int)$params['page'] : 0,
+            'asArray' => empty($params['asArray']) ? false : (bool)$params['asArray'],
         ];
 
         $return = [];
@@ -119,19 +123,75 @@ class SortedsetModel extends ActiveModel
         if ($result) {
             $key = 0;
             while (isset($result[$key])) {
-                $row = clone $model;
-                $row->setAttributes(array_merge(json_decode($result[$key++], true), ['score' => $result[$key++]]));
-                $row->setIsNewRecord(false);
-
+                $attributes = array_merge(json_decode($result[$key++], true), ['score' => $result[$key++]]);
+                if (empty($params['asArray'])) {
+                    $row = clone $model;
+                    $row->setAttributes($attributes);
+                    $row->setIsNewRecord(false);
+                    $row->afterFind();
+                } else {
+                    $row = $attributes;
+                }
                 $return[] = $row;
             }
         }
 
-        if (false === $model->afterFind(true)) {
-            return false;
+        return $return;
+    }
+
+    /**
+     * Получения списка наименований задач
+     *
+     * @param string $params[pattern] Regexp выборки наименований
+     * @return array
+     */
+    public static function getTables($params = [])
+    {
+        $db      = static::getDb();
+        $tables  = [];
+        $point   = 0;
+        $pattern = '*';
+
+        if (isset($params['pattern'])) {
+            $pattern = (string)$params['pattern'];
         }
 
-        return $return;
+        while ($result = $db->executeCommand('scan', [$point, 'MATCH', $pattern, 'COUNT', 10000])) {
+            if ($point !== (int)$result[0]) {
+                $point = (int)$result[0];
+            }
+
+            if ($rows = $result[1]) {
+                foreach ($rows as $value) {
+                    $tables[] = $value;
+                }
+            }
+
+            if (0 === $point) {
+                break;
+            }
+        }
+
+        return $tables;
+    }
+
+    /**
+     * Получение списка наименований групп задач
+     * 
+     * @param string $params[pattern] Regexp выборки наименований
+     * @return array
+     */
+    public static function getGroups($params = [])
+    {
+        $groups = [];
+
+        if ($result = static::getTables($params)) {
+            foreach ($result as $value) {
+                $groups[explode('::', $value)[0]] = '';
+            }
+        }
+
+        return array_keys($groups);
     }
 
 }

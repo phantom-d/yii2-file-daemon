@@ -20,6 +20,8 @@ class DaemonController extends Controller
 
     private $configAlias = 'image-server';
 
+    protected $component  = null;
+
     public $modelClass = 'app\models\Joblist';
 
     public function behaviors()
@@ -54,7 +56,6 @@ class DaemonController extends Controller
         }
         $this->configName = $this->configAlias;
         $this->getConfig();
-        $this->renewConnections();
 
         return parent::runAction($id, $params);
     }

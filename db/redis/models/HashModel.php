@@ -26,8 +26,9 @@ class HashModel extends ActiveModel
     public static function getOne($params = [])
     {
         $params = [
-            'table'  => isset($params['table']) ? (string)$params['table'] : static::tableName(),
-            'field' => isset($params['field']) ? (string)$params['field'] : '',
+            'table'   => isset($params['table']) ? (string)$params['table'] : static::tableName(),
+            'field'   => isset($params['field']) ? (string)$params['field'] : '',
+            'asArray' => empty($params['asArray']) ? false : (bool)$params['asArray'],
         ];
 
         $errors = [];
@@ -58,14 +59,16 @@ class HashModel extends ActiveModel
 
         $result = $db->hget($params['table'], $params['field']);
         if ($result) {
-            $model->setAttributes(['name' => $params['field'], 'path' => $result]);
-            $model->setIsNewRecord(false);
+            $attributes = ['name' => $params['field'], 'path' => $result];
+            if (empty($params['asArray'])) {
+                $model->setAttributes($attributes);
+                $model->setIsNewRecord(false);
+                $model->afterFind(true);
+            } else {
+                $model = $attributes;
+            }
         } else {
             $model = null;
-        }
-
-        if (false === $model->afterFind(true)) {
-            return false;
         }
 
         return $model;
@@ -82,8 +85,9 @@ class HashModel extends ActiveModel
     public static function getAll($params = [])
     {
         $params = [
-            'table'  => isset($params['table']) ? (string)$params['table'] : static::tableName(),
-            'fields' => isset($params['fields']) ? array_filter((array)$params['fields']) : [],
+            'table'   => isset($params['table']) ? (string)$params['table'] : static::tableName(),
+            'fields'  => isset($params['fields']) ? array_filter((array)$params['fields']) : [],
+            'asArray' => empty($params['asArray']) ? false : (bool)$params['asArray'],
         ];
 
         $return = [];
@@ -115,10 +119,15 @@ class HashModel extends ActiveModel
             if ($result) {
                 $key = 0;
                 while (isset($result[$key])) {
-                    $row = clone $model;
-                    $row->setAttributes(['name' => $result[$key++], 'path' => $result[$key++]]);
-                    $row->setIsNewRecord(false);
-
+                    $attributes = ['name' => $result[$key++], 'path' => $result[$key++]];
+                    if (empty($params['asArray'])) {
+                        $row = clone $model;
+                        $row->setAttributes($attributes);
+                        $row->setIsNewRecord(false);
+                        $row->afterFind();
+                    } else {
+                        $row = $attributes;
+                    }
                     $return[] = $row;
                 }
             }
@@ -133,18 +142,19 @@ class HashModel extends ActiveModel
                 $result = array_combine($params['fields'], $result);
                 foreach ($result as $name => $path) {
                     if ($path) {
-                        $row = clone $model;
-                        $row->setAttributes(['name' => $name, 'path' => $path]);
-                        $row->setIsNewRecord(false);
-
+                        $attributes = ['name' => $name, 'path' => $path];
+                        if (empty($params['asArray'])) {
+                            $row = clone $model;
+                            $row->setAttributes($attributes);
+                            $row->setIsNewRecord(false);
+                            $row->afterFind();
+                        } else {
+                            $row = $attributes;
+                        }
                         $return[] = $row;
                     }
                 }
             }
-        }
-
-        if (false === $model->afterFind(true)) {
-            return false;
         }
 
         return $return;

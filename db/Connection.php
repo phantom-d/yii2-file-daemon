@@ -56,7 +56,7 @@ class Connection extends Component
                 if (empty($config['driver'])) {
                     $message = 'Incorrect parameter `driver` for "' . $model . '"';
                     \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
-                    throw new Exception($message);
+                    throw new InvalidParamException($message);
                 }
 
                 \Yii::$app->set('filedaemon_' . $model, $config['db']);
@@ -71,88 +71,47 @@ class Connection extends Component
             $params = $params[0];
         }
 
-        $params['model'] = strtolower($name);
+        if (false === isset($params['model']) || '' === (string)$params['model']) {
+            $params['model'] = strtolower($name);
+        }
 
-        if (isset($this->models[$params['model']])) {
-            return call_user_func_array([$this, 'getOne'], [$params]);
+        $class = isset($this->models[$params['model']]) ? $this->models[$params['model']] : null;
+
+        if ($class && $params['model'] === strtolower($name)) {
+            unset($params['model']);
+            $params = $params ? [$params] : [];
+            return call_user_func_array([$class, 'getOne'], $params);
         }
 
         if ('all' === mb_substr($params['model'], -3)) {
-            $params['model'] = mb_substr($params['model'], 0, (mb_strlen($params['model']) - 3));
-            if (isset($this->models[$params['model']])) {
-                return call_user_func_array([$this, 'getAll'], [$params]);
+            $model      = mb_substr($params['model'], 0, (mb_strlen($params['model']) - 3));
+            $checkClass = isset($this->models[$model]) ? $this->models[$model] : null;
+
+            if ($checkClass) {
+                unset($params['model']);
+                $params = $params ? [$params] : [];
+                return call_user_func_array([$checkClass, 'getAll'], $params);
             }
         }
 
-        throw new UnknownMethodException('Calling unknown method: ' . get_class($this) . "::$name()");
-    }
+        if ('tables' === mb_substr($params['model'], -6)) {
+            $model      = mb_substr($params['model'], 0, (mb_strlen($params['model']) - 6));
+            $checkClass = isset($this->models[$model]) ? $this->models[$model] : null;
 
-    /**
-     * Получение одной записи
-     *
-     * @param array $params Массив параметров
-     * @return mixed
-     */
-    public function getOne($params = [])
-    {
-        if (empty($params['model'])) {
-            throw new InvalidParamException("Parameter 'model' could not be empty!");
-        }
-
-        $model = $params['model'];
-        unset($params['model']);
-
-        $class = $this->models[$model];
-
-        if (false === method_exists($class, 'getOne')) {
-            throw new UnknownMethodException('Calling unknown method: ' . $class . "::getOne()");
-        }
-
-        return $class::getOne($params);
-    }
-
-    /**
-     * Получение списка записей из источника.
-     *
-     * @param array $params Массив параметров
-     * @return mixed
-     */
-    public function getAll($params = [])
-    {
-        if (empty($params['model'])) {
-            throw new InvalidParamException("Parameter 'model' could not be empty!");
-        }
-
-        $model = $params['model'];
-        unset($params['model']);
-
-        $class = $this->models[$model];
-
-        if (false === method_exists($class, 'getAll')) {
-            throw new UnknownMethodException('Calling unknown method: ' . $class . "::getAll()");
-        }
-
-        return $class::getAll($params);
-    }
-
-    /**
-     * Получения списка ключей из RedisDB
-     *
-     * @param string $table Паттерн ключа в RedisDB.
-     * @param string $db Исходная база данных.
-     * @return mixed|FALSE Массив ключей из RedisDB
-     */
-    public function getTables($table = '*', $db = 'redis0')
-    {
-        $return = false;
-
-        if ($connectionDb = $this->getConnection($db)) {
-            if ($table === '') {
-                $table = '*';
+            if ($checkClass) {
+                unset($params['model']);
+                $params = $params ? [$params] : [];
+                return call_user_func_array([$checkClass, 'getTables'], $params);
             }
-            $return = $connectionDb->keys($table);
         }
-        return $return;
+
+        if ($class && method_exists($class, $name)) {
+            unset($params['model']);
+            $params = $params ? [$params] : [];
+            return call_user_func_array([$class, $name], $params);
+        }
+
+        throw new UnknownMethodException('Calling unknown method: ' . get_class($this) . "::{$name}()");
     }
 
     /**
