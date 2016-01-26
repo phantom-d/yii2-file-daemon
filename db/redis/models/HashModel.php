@@ -13,65 +13,90 @@ use yii\base\InvalidParamException;
 class HashModel extends ActiveModel
 {
 
-    private $type = 'hash';
+    protected static $type = 'hash';
+
+    /**
+     * @inheritdoc
+     */
+    public static function count($params = [])
+    {
+        if (is_array($params)) {
+            $params = [
+                'table' => isset($params['table']) ? (string)$params['table'] : static::tableName(),
+            ];
+        } else {
+            $params = [
+                'table' => $params ? (string)$params : static::tableName(),
+            ];
+        }
+
+        $return = null;
+        if (static::checkTable($params['table'])) {
+            $model = new static;
+            $db    = $model->getDb();
+
+            $query  = [
+                $params['table'], //
+            ];
+            $result = $db->executeCommand('hlen', $query);
+            if (false === is_null($result)) {
+                $return = (int)$result;
+            }
+        }
+
+        return $return;
+    }
 
     /**
      * Получение одной записи
      *
-     * @param string $params[table] Наименование ключа в RedisDB
-     * @param string $params[field] Наименование поля
+     * @param string $params Наименование поля
      * @throws InvalidParamException
      * @return mixed
      */
-    public static function getOne($params = [])
+    public static function one($params = '')
     {
-        $params = [
-            'table'   => isset($params['table']) ? (string)$params['table'] : static::tableName(),
-            'field'   => isset($params['field']) ? (string)$params['field'] : '',
-            'asArray' => empty($params['asArray']) ? false : (bool)$params['asArray'],
-        ];
+        $return = null;
+        $table  = static::tableName();
 
-        $errors = [];
-        if ('' === $params['table']) {
-            $errors[] = Yii::t('app', "Parameter 'table' cannot be blank.");
-        }
+        if (static::checkTable($table)) {
+            $db    = static::getDb();
+            $model = new static;
 
-        if ('' === $params['field']) {
-            $errors[] = Yii::t('app', "Parameter 'field' cannot be blank.");
-        }
+            $attributes = null;
 
-        if ($errors) {
-            throw new InvalidParamException(print_r($errors, true));
-        }
+            if ($params) {
+                $params = (string)$params;
+                $query  = [
+                    $table,
+                    $params,
+                ];
 
-        $model = new static;
-        $db    = $model->getDb();
+                $result = $db->executeCommand('hget', $query);
+                if ($result) {
+                    $attributes = ['name' => $params, 'path' => $result];
+                }
+            } else {
+                $query = [
+                    $table, 0,
+                    'COUNT', 1
+                ];
 
-        if (false === $db->exists($params['table'])) {
-            Yii::error(Yii::t('app', "Table not exists: {table}!", $params), __METHOD__ . '(' . __LINE__ . ')');
-            return false;
-        }
+                if ($result = $db->executeCommand('hscan', $query)) {
+                    $attributes = ['name' => (string)$result[1][0], 'path' => (string)$result[1][1]];
+                }
+            }
 
-        if ($model->type !== $db->type($params['table'])) {
-            Yii::error(Yii::t('app', "Incorrect type of table '{table}'! Must be hash!", $params), __METHOD__ . '(' . __LINE__ . ')');
-            return false;
-        }
-
-        $result = $db->hget($params['table'], $params['field']);
-        if ($result) {
-            $attributes = ['name' => $params['field'], 'path' => $result];
-            if (empty($params['asArray'])) {
+            if ($attributes) {
                 $model->setAttributes($attributes);
                 $model->setIsNewRecord(false);
-                $model->afterFind(true);
-            } else {
-                $model = $attributes;
+                $model->afterFind();
+
+                $return = $model;
             }
-        } else {
-            $model = null;
         }
 
-        return $model;
+        return $return;
     }
 
     /**
@@ -82,82 +107,121 @@ class HashModel extends ActiveModel
      * @throws InvalidParamException
      * @return mixed
      */
-    public static function getAll($params = [])
+    public static function all($params = [], $limit = 10, $page = 0)
     {
-        $params = [
-            'table'   => isset($params['table']) ? (string)$params['table'] : static::tableName(),
-            'fields'  => isset($params['fields']) ? array_filter((array)$params['fields']) : [],
-            'asArray' => empty($params['asArray']) ? false : (bool)$params['asArray'],
-        ];
+        if ($params) {
+            $params = array_filter((array)$params);
+        }
 
         $return = [];
+        $table  = static::tableName();
 
-        if ('' === $params['table']) {
-            throw new InvalidParamException(Yii::t('app', "Parameter 'table' cannot be blank."));
-        }
+        if (static::checkTable($table)) {
+            $model = new static;
+            $db    = $model->getDb();
+            $query = [$table];
 
-        $model = new static;
-        $db    = $model->getDb();
+            if (empty($params)) {
+                $offset = 0;
+                if ((int)$limit) {
+                    $limit = (int)$limit;
+                    $page  = (int)$page;
 
-        if (false === $db->exists($params['table'])) {
-            Yii::error(Yii::t('app', "Table not exists: {table}!", $params), __METHOD__ . '(' . __LINE__ . ')');
-            return false;
-        }
+                    $script = "local page = 0 local limit = {$limit} local cursor = 0 local elements = {}"
+                        . " while true do  local result = redis.pcall('HSCAN', '{$table}', cursor, 'COUNT', limit) local count  = table.getn(result[2])/2"
+                        . " cursor = result[1] if page == {$page} then local j = limit * 2 for i=1,j do elements[i] = result[2][i] end break end page = page + 1 end"
+                        . " return elements";
 
-        if ($model->type !== $db->type($params['table'])) {
-            Yii::error(Yii::t('app', "Incorrect type of table '{table}'! Must be hash!", $params), __METHOD__ . '(' . __LINE__ . ')');
-            return false;
-        }
+                    $result = $db->executeCommand('eval', [$script, 0]);
+                } else {
+                    $result = $db->executeCommand('hgetall', $query);
+                }
 
-        $query = [
-            $params['table'],
-        ];
-
-        if (empty($params['fields'])) {
-            $result = $db->executeCommand('hgetall', $query);
-
-            if ($result) {
-                $key = 0;
-                while (isset($result[$key])) {
-                    $attributes = ['name' => $result[$key++], 'path' => $result[$key++]];
-                    if (empty($params['asArray'])) {
+                if ($result) {
+                    $key = 0;
+                    while (isset($result[$key])) {
                         $row = clone $model;
-                        $row->setAttributes($attributes);
+                        $row->setAttributes(['name' => $result[$key++], 'path' => $result[$key++]]);
                         $row->setIsNewRecord(false);
                         $row->afterFind();
-                    } else {
-                        $row = $attributes;
+
+                        $return[] = $row;
                     }
-                    $return[] = $row;
                 }
-            }
-        } else {
-            foreach ($params['fields'] as $field) {
-                $query[] = (string)$field;
-            }
+            } else {
+                $query  = array_merge($query, $params);
+                $result = $db->executeCommand('hmget', $query);
 
-            $result = $db->executeCommand('hmget', $query);
-
-            if ($result) {
-                $result = array_combine($params['fields'], $result);
-                foreach ($result as $name => $path) {
-                    if ($path) {
-                        $attributes = ['name' => $name, 'path' => $path];
-                        if (empty($params['asArray'])) {
+                if ($result) {
+                    $result = array_combine($params, $result);
+                    foreach ($result as $name => $path) {
+                        if ($path) {
                             $row = clone $model;
-                            $row->setAttributes($attributes);
+                            $row->setAttributes(['name' => $name, 'path' => $path]);
                             $row->setIsNewRecord(false);
                             $row->afterFind();
-                        } else {
-                            $row = $attributes;
+
+                            $return[] = $row;
                         }
-                        $return[] = $row;
                     }
                 }
             }
         }
 
         return $return;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function save($runValidation = true, $attributeNames = NULL)
+    {
+        if ($runValidation && !$this->validate($attributes)) {
+            return false;
+        }
+        if (!$this->beforeSave(true)) {
+            return false;
+        }
+
+        $changedAttributes = $this->getDirtyAttributes($attributes);
+        if (empty($changedAttributes)) {
+            $this->afterSave(false, $changedAttributes);
+            return 0;
+        }
+
+        $db     = static::getDb();
+        $values = $this->getAttributes();
+
+        $query  = [static::tableName()];
+        $result = $this->attributes();
+
+        $key = 0;
+        while (isset($result[$key])) {
+            $query[] = $values[$result[$key++]];
+        }
+
+        $db->executeCommand('hmset', $query);
+
+        $this->setOldAttributes($values);
+        $this->afterSave(true, $changedAttributes);
+
+        return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function update($runValidation = true, $attributeNames = NULL)
+    {
+        return $this->save($runValidation, $attributeNames);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function insert($runValidation = true, $attributes = null)
+    {
+        return $this->save($runValidation, $attributeNames);
     }
 
 }

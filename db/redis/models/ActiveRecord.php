@@ -23,52 +23,66 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
         return \Yii::$app->get('filedaemon_' . Inflector::camel2id(StringHelper::basename(get_called_class()), '_'));
     }
 
-    public static function getAll($params = array())
+    public static function model($params = [])
+    {
+        $model = new static;
+        if ($params) {
+            $model->setAttributes($params);
+        }
+        return $model;
+    }
+
+    public static function count($params = [])
     {
         throw new NotSupportedException();
     }
 
-    public static function getCount($params = array())
+    public static function one($params = [])
+    {
+        if (is_string($params) || isset($params[0])) {
+            $params = [
+                'id' => is_array($params) ? array_values($params) : $params,
+            ];
+        }
+
+        $query = static::find();
+        if ($params) {
+            $query->andWhere($params);
+        }
+        return $query->one();
+    }
+
+    public static function all($params = [], $limit = 10, $page = 0)
+    {
+        if (is_string($params) || isset($params[0])) {
+            $params = [
+                'id' => is_array($params) ? array_values($params) : $params,
+            ];
+        }
+
+        $query = static::find();
+        if ($params) {
+            $query->andWhere($params);
+        }
+        return $query->all();
+    }
+
+    public static function names($params = [])
     {
         throw new NotSupportedException();
     }
 
-    public static function getData($params = array())
+    public static function groups($params = [])
     {
         throw new NotSupportedException();
     }
 
-    public static function getJobs()
+    public function remove()
     {
         throw new NotSupportedException();
     }
 
-    public static function getOne($params = array())
-    {
-        throw new NotSupportedException();
-    }
-
-    public static function removeJobData()
-    {
-        throw new NotSupportedException();
-    }
-
-    public static function renameJob($params = array())
-    {
-        throw new NotSupportedException();
-    }
-
-    public static function setData($params = array())
-    {
-        throw new NotSupportedException();
-    }
-
-    public static function getGroups($params = array())
-    {
-        throw new NotSupportedException();
-    }
-
-    public static function getTables($params = array())
+    public function rename($params = [])
     {
         throw new NotSupportedException();
     }

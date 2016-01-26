@@ -3,9 +3,9 @@
 namespace phantomd\filedaemon\db;
 
 use yii\base\Component;
+use yii\helpers\Inflector;
 use yii\base\UnknownMethodException;
 use yii\base\InvalidParamException;
-use yii\db\Exception;
 
 /**
  * Connection
@@ -71,44 +71,14 @@ class Connection extends Component
             $params = $params[0];
         }
 
-        if (false === isset($params['model']) || '' === (string)$params['model']) {
-            $params['model'] = strtolower($name);
-        }
+        $method = explode('-', Inflector::camel2id($name));
+        $model  = array_shift($method);
+        $method = lcfirst(Inflector::id2camel(implode('-', $method)));
+        $class  = isset($this->models[$model]) ? $this->models[$model] : null;
 
-        $class = isset($this->models[$params['model']]) ? $this->models[$params['model']] : null;
-
-        if ($class && $params['model'] === strtolower($name)) {
-            unset($params['model']);
+        if ($class && method_exists($class, $method)) {
             $params = $params ? [$params] : [];
-            return call_user_func_array([$class, 'getOne'], $params);
-        }
-
-        if ('all' === mb_substr($params['model'], -3)) {
-            $model      = mb_substr($params['model'], 0, (mb_strlen($params['model']) - 3));
-            $checkClass = isset($this->models[$model]) ? $this->models[$model] : null;
-
-            if ($checkClass) {
-                unset($params['model']);
-                $params = $params ? [$params] : [];
-                return call_user_func_array([$checkClass, 'getAll'], $params);
-            }
-        }
-
-        if ('tables' === mb_substr($params['model'], -6)) {
-            $model      = mb_substr($params['model'], 0, (mb_strlen($params['model']) - 6));
-            $checkClass = isset($this->models[$model]) ? $this->models[$model] : null;
-
-            if ($checkClass) {
-                unset($params['model']);
-                $params = $params ? [$params] : [];
-                return call_user_func_array([$checkClass, 'getTables'], $params);
-            }
-        }
-
-        if ($class && method_exists($class, $name)) {
-            unset($params['model']);
-            $params = $params ? [$params] : [];
-            return call_user_func_array([$class, $name], $params);
+            return call_user_func_array([$class, $method], $params);
         }
 
         throw new UnknownMethodException('Calling unknown method: ' . get_class($this) . "::{$name}()");

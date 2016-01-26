@@ -23,6 +23,8 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
 
     protected static $db = null;
 
+    protected static $errors = [];
+
     /**
      * @inheritdoc
      */
@@ -31,60 +33,66 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
         return \Yii::$app->get('filedaemon_' . Inflector::camel2id(StringHelper::basename(get_called_class()), '_'));
     }
 
+    public static function model($params = [])
+    {
+        $model = new static;
+        if ($params) {
+            $model->setAttributes($params);
+        }
+        return $model;
+    }
+
     /**
-     * Declares the name of the database table associated with this AR class.
-     * By default this method returns the class name as the table name by calling [[Inflector::camel2id()]]
-     * if the table is not named after this convention.
-     * @return string the table name
+     * @inheritdoc
      */
     public static function tableName()
     {
         return Inflector::camel2id(StringHelper::basename(get_called_class()), '_');
     }
 
-    public static function getAll($params = [])
+    public static function count($params = [])
     {
         throw new NotSupportedException();
     }
 
-    public static function getCount($params = [])
+    public static function one($params = [])
     {
         throw new NotSupportedException();
     }
 
-    public static function getData($params = [])
+    public static function all($params = [], $limit = 10, $page = 0)
     {
         throw new NotSupportedException();
     }
 
-    public static function getJobs()
+    public static function names($params = [])
     {
         throw new NotSupportedException();
     }
 
-    public static function getOne($params = [])
+    public static function groups($params = [])
     {
         throw new NotSupportedException();
     }
 
-    public static function removeJobData()
+    public function remove()
     {
         throw new NotSupportedException();
     }
 
-    public static function renameJob($params = [])
+    public function rename($params = [])
     {
         throw new NotSupportedException();
     }
 
-    public static function setData($params = [])
+    public function save($runValidation = true, $attributeNames = NULL)
     {
-        throw new NotSupportedException();
+        return parent::save($runValidation, $attributeNames);
     }
 
     public function insert($runValidation = true, $attributes = null)
     {
-        throw new NotSupportedException();
+        return parent::insert($runValidation, $attributes);
     }
 
     public static function find()
@@ -94,17 +102,53 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
 
     public static function primaryKey()
     {
-        throw new NotSupportedException();
+        return parent::primaryKey();
     }
 
-    public static function getGroups($params = [])
+    /**
+     * Проверка наличия и соответствие типа ключа в RedisDB
+     * 
+     * @param string $table
+     * @return boolean
+     * @throws InvalidParamException
+     */
+    protected static function checkTable($table = '')
     {
-        throw new NotSupportedException();
+        $table = (string)$table;
+
+        if ('' === $table) {
+            $message                 = \Yii::t('app', "Parameter 'table' cannot be blank.");
+            static::$errors['table'] = $message;
+            \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
+            return false;
+        }
+
+        $db = static::getDb();
+        if (false === $db->exists($table)) {
+            $message                 = \Yii::t('app', "Table not exists: {table}!", ['table' => $table]);
+            static::$errors['table'] = $message;
+            \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
+            return false;
+        }
+
+        if (static::$type !== $db->type($table)) {
+            $message                 = \Yii::t('app', "Incorrect type of table '{table}'! Must be sorted sets!", ['table' => $table]);
+            static::$errors['table'] = $message;
+            \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
+            return false;
+        }
+
+        return true;
     }
 
-    public static function getTables($params = [])
+    public static function getModelErrors()
     {
-        throw new NotSupportedException();
+        $return = null;
+        if (static::$errors) {
+            $return = static::$errors;
+        }
+
+        return $return;
     }
 
 }

@@ -3,7 +3,7 @@
 namespace phantomd\filedaemon;
 
 use yii\base\ErrorException;
-use app\models\Joblist;
+use phantomd\filedaemon\db\redis\models\Jobs;
 
 /**
  * Компонент для работы
@@ -40,7 +40,6 @@ class FileProcessing extends \yii\base\Component
         }
 
         static::$adapter = new db\Connection(['params' => $this->config['db']]);
-
     }
 
     public function __call($name, $params)
@@ -49,71 +48,38 @@ class FileProcessing extends \yii\base\Component
     }
 
     /**
-     * Переименование ключа в Redis DB
-     *
-     * @param string $nameSrc Исходное наименование ключа
-     * @param string $nameDst Новое наименование ключа
-     * @param string $db Исходная база данных.
-     * @return bool Статус переименования ключа
-     */
-    public function renameTable($nameSrc, $nameDst, $db = 'redis0')
-    {
-        $return = false;
-
-        if ($connectionDb = $this->getConnection($db)) {
-            $return = (bool)$connectionDb->renamenx($nameSrc, $nameDst);
-            \Yii::trace("RanameNX:<br>\n" . var_export($return, true), __METHOD__ . '(' . __LINE__ . ')');
-        }
-        return $return;
-    }
-
-    /**
-     * Запись данных для задач в RedisDB
+     * Запись данных для задач
      * 
-     * @param string $table Наименование ключа в RedisDB
-     * @param array $params Массив данных в формате $this->itemSrcScheme + score
-     * @param string $db Исходная база данных.
+     * @param string $name Наименование задачи
+     * @param array $params Массив данных
      * @return boolean
      */
-    public function setSource($table, $params, $db = 'redis0')
+    public function addSource($name, $params)
     {
         $return = false;
-        if ($table && false === empty($params)) {
-            if ($connectionDb = $this->getConnection($db)) {
-                if (0 === (int)$connectionDb->exists($table) || 'zset' === $connectionDb->type($table)) {
-                    $count = 0;
-                    if (empty($params[0])) {
-                        $params = array($params);
-                    }
-                    foreach ($params as $item) {
-                        $result = [];
-                        $score  = isset($item['score']) ? (int)$item['score'] : 0;
-                        foreach ($this->itemSourceScheme as $key => $value) {
-                            $result[$key] = isset($item[$key]) ? $item[$key] : $value;
-                        }
-                        if (empty($result['url']) || empty($result['image_id']) || empty($result['object_id'])) {
-                            \Yii::warning("There are no one of required parameters (object_id, url, image_id)!<br>\n" . var_export($result, true), __METHOD__ . '(' . __LINE__ . ')');
-                        } else {
-                            $data = [
-                                'item'  => $result,
-                                'score' => $score
-                            ];
-                            if ($this->setZItem($table, $data, $db)) {
-                                ++$count;
-                            }
-                        }
-                    }
-                    if ($count === count($params)) {
-                        $return = true;
-                    }
-                } else {
-                    \Yii::error("Incorrect table '{$table}' type! Must be sorted sets!", __METHOD__ . '(' . __LINE__ . ')');
-                }
-            }
-        } else {
-            $args = func_get_args();
-            \Yii::error("Incorrect params!<br>\n" . var_export($args, true), __METHOD__ . '(' . __LINE__ . ')');
+        $count  = 0;
+
+        if (empty($params[0])) {
+            $params = array($params);
         }
+
+        foreach ($params as $item) {
+            $result = $item;
+
+            $result['score'] = isset($item['score']) ? (int)$item['score'] : 0;
+
+            $model = static::$adapter->sourceModel($result);
+            if ($model->save()) {
+                ++$count;
+            } else {
+                \Yii::warning($model->getErrors(), __METHOD__ . '(' . __LINE__ . ')');
+            }
+        }
+
+        if ($count === count($params)) {
+            $return = true;
+        }
+
         return $return;
     }
 
@@ -230,79 +196,56 @@ class FileProcessing extends \yii\base\Component
         return $return;
     }
 
-    public function getCount($table, $db = 'redis0')
-    {
-        return $this->getZCount($table, $db);
-    }
-
-    /**
-     * Получение количества записей в сортированном множестве в RedisDB
-     *
-     * @param string $table Наименование ключа в RedisDB
-     * @param string $db Исходная база данных.
-     * @return integer
-     */
-    public function getZCount($table, $db = 'redis0')
-    {
-        $return = 0;
-
-        if ($table && $connectionDb = $this->getConnection($db)) {
-            if ('zset' === $connectionDb->type($table)) {
-                $return = (int)$connectionDb->zcount($table, '-inf', '+inf');
-            }
-        }
-        return $return;
-    }
-
     /**
      * Создание списка задач для работы в соответствии с имеющимися данными в источнике.
      *
-     * @param string $db Исходная база данных.
-     * @param string $checkDb Проверочная база данных.
-     * @return boolean Список создан и находится в режиме ожидания или FALSE
+     * @return bool
      */
-    public function createJoblist($db = 'redis0', $checkDb = 'redisjoblist')
+    public function addJobs()
     {
         $return = false;
-        if ($result = $this->getTables('*', $db)) {
+        if ($result = static::$adapter->sourceNames()) {
             $jobsId = [];
-            if (is_array($result)) {
-                foreach ($result as $value) {
-                    $createJob = false;
-                    $callback  = null;
+            foreach ($result as $source) {
+                $createJob = false;
+                $callback  = false;
 
-                    if ($job = Joblist::chooseJob(md5($value))) {
-                        $callback = $job->callback;
-                        if (Joblist::STATUS_COMPLETE === (int)$job->status) {
-                            $job->status = Joblist::STATUS_PREPARE;
-                            $resultJob   = $job->save();
-                        }
-                        if (Joblist::STATUS_ERROR === (int)$job->status) {
-                            $job->status = Joblist::STATUS_PREPARE;
-                            $resultJob   = $job->save();
-                        }
-
-                        if (Joblist::STATUS_PREPARE === (int)$job->status) {
-                            $createJob = true;
-                        }
+                if ($job = static::$adapter->jobsOne(['name' => $source])) {
+                    $callback = $job->callback;
+                    if (Jobs::STATUS_COMPLETE === (int)$job->status) {
+                        $job->status = Jobs::STATUS_PREPARE;
+                        $job->save();
                     }
-
-                    \Yii::trace($createJob, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '--- $createJob');
-
-                    if ($createJob && $this->createJob($value, $callback, $db)) {
-                        $jobsId[] = md5($value);
+                    if (Jobs::STATUS_ERROR === (int)$job->status) {
+                        $job->status = Jobs::STATUS_PREPARE;
+                        $job->save();
                     }
+                    $job->refresh();
+
+                    if (Jobs::STATUS_PREPARE === (int)$job->status) {
+                        $createJob = true;
+                    }
+                }
+
+                if (empty($callback)) {
+                    $group = explode('::', $source)[0];
+                    if (isset($this->config['callbacks'][$group])) {
+                        $callback  = $this->config['callbacks'][$group];
+                        $createJob = true;
+                    }
+                }
+
+                if ($createJob && $id = $this->addJob($source, $callback)) {
+                    $jobsId[] = $id;
                 }
             }
 
-            \Yii::trace($jobsId, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '--- $jobsId');
-
             if ($jobsId) {
-                $jobList = Joblist::findAll($jobsId);
-                if ($jobList) {
-                    foreach ($jobList as $job) {
-                        if (Joblist::STATUS_PREPARE === (int)$job->status) {
-                            $job->status = Joblist::STATUS_WAIT;
+                $jobs = static::$adapter->jobsAll($jobsId);
+                if ($jobs) {
+                    foreach ($jobs as $job) {
+                        if (Jobs::STATUS_PREPARE === (int)$job->status) {
+                            $job->status = Jobs::STATUS_WAIT;
                             $job->save();
                         }
                     }
@@ -316,13 +259,13 @@ class FileProcessing extends \yii\base\Component
     /**
      * Добавление задачи в Redis DB
      * 
-     * @param string $table Наименование ключа в RedisDB
+     * @param string $name Наименование ключа в RedisDB
      * @param string $callback Ссылка для отправки результатов обработки
      * @param string $db Исходная база данных.
      * @param int $status Статус по умолчанию
      * @return boolean
      */
-    public function createJob($table, $callback, $db = 'redis0', $status = Joblist::STATUS_PREPARE)
+    public function addJob($name, $callback, $status = Jobs::STATUS_PREPARE)
     {
         $return = false;
 
@@ -330,20 +273,17 @@ class FileProcessing extends \yii\base\Component
             return $return;
         }
 
-        $countTotal = (int)$this->getCount($table);
+        $total = static::$adapter->sourceCount($name);
 
-        if ($countTotal > 0) {
+        if ($total) {
             $params = [
-                'id'           => md5($table),
-                'name'         => $table,
-                'callback'     => $callback,
-                'status'       => ($this->checkSorceAccess($table, $db) ? $status : Joblist::STATUS_ERROR),
-                'total'        => $countTotal,
-                'time_elapsed' => 0,
-                'complete'     => 0,
+                'name'     => $name,
+                'callback' => $callback,
+                'status'   => ($this->checkSorceAccess($name) ? $status : Jobs::STATUS_ERROR),
+                'total'    => $total,
             ];
 
-            if ($job = Joblist::chooseJob(md5($table))) {
+            if ($job = static::$adapter->jobsOne(['name' => $name])) {
                 if ($job->statusWork) {
                     $params['status'] = $job->status;
                 }
@@ -351,52 +291,34 @@ class FileProcessing extends \yii\base\Component
             } else {
                 $params['time_create'] = time();
 
-                $job = new Joblist($params);
+                $job = new Jobs($params);
             }
             if ($job->save()) {
-                $return = true;
+                $job->refresh();
+                $return = $job->id;
             }
         }
         return $return;
     }
 
     /**
-     * Проверка доступности источника для добавления в список задач.
-     * Условия для положительного ответа:
-     * <ul>
-     * <li>Задачи с таким ID не существует</li>
-     * <li>Домен в источнике доступен по запросу</li>
-     * </ul>
+     * Проверка доступности источника по URL для добавления в список задач.
      *
-     * @param string $table Наименование ключа в RedisDB
-     * @param string $db Исходная база данных.
-     * @return mixed|bool Источник доступен для добаления в список задач или FALSE
+     * @param string $name Наименование задачи
+     * @return bool
      */
-    public function checkSorceAccess($table, $db = 'redis0')
+    public function checkSorceAccess($name)
     {
         $return = false;
-        if ($table && $db) {
-            if ($connectionDb = $this->getConnection($db)) {
-                if ('zset' === $connectionDb->type($table)) {
-                    $item = $this->getSource($table, $db, false);
-                    if (false === empty($item['item']['url'])) {
-                        $curl = new components\Curl();
-                        foreach ($this->curlOptions as $name => $value) {
-                            $curl->setOption($name, $value);
-                        }
-                        $curl->head($item['item']['url']);
+        $item   = static::$adapter->sourceOne($name);
+        if ($item) {
+            $curl = new components\Curl();
+            $curl->setOptions($this->curlOptions);
+            $curl->head($item->url);
 
-                        if ($curl->responseCode) {
-                            $return = true;
-                        }
-                    }
-                } else {
-                    \Yii::error("Incorrect table '{$table}' type! Must be sorted sets!", __METHOD__ . '(' . __LINE__ . ')');
-                }
+            if ($curl->responseCode) {
+                $return = true;
             }
-        } else {
-            $args = func_get_args();
-            \Yii::error("Incorrect params!<br>\n" . var_export($args, true), __METHOD__ . '(' . __LINE__ . ')');
         }
         return $return;
     }

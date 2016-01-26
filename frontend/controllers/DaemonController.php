@@ -22,8 +22,6 @@ class DaemonController extends Controller
 
     protected $component  = null;
 
-    public $modelClass = 'app\models\Joblist';
-
     public function behaviors()
     {
         $behaviors                      = parent::behaviors();

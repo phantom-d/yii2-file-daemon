@@ -37,7 +37,7 @@ class Jobs extends ActiveRecord
     public function rules()
     {
         return [
-            [['id'], 'unique'],
+            [['id', 'name', ], 'unique'],
             [['time_elapsed', 'time_per_item', 'time_to_left',], 'double'],
             [['pid', 'status', 'total', 'complete', 'errors', 'time_create', 'time_end',], 'integer'],
             [['name', 'id', 'callback', 'group'], 'string'],
@@ -83,6 +83,10 @@ class Jobs extends ActiveRecord
         
         if (empty($this->time_create)) {
             $this->time_create = time();
+        }
+
+        if (empty($this->id)) {
+            $this->id = md5($this->name);
         }
 
         return parent::beforeSave($insert);

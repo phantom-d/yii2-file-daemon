@@ -13,7 +13,42 @@ use yii\base\InvalidParamException;
 class SortedsetModel extends ActiveModel
 {
 
-    private $type = 'zset';
+    protected static $type = 'zset';
+
+    protected $table = null;
+
+    /**
+     * @inheritdoc
+     */
+    public static function count($params = [])
+    {
+        if (is_array($params)) {
+            $params = [
+                'table' => isset($params['table']) ? (string)$params['table'] : '',
+            ];
+        } else {
+            $params = [
+                'table' => (string)$params,
+            ];
+        }
+
+        $return = null;
+        if (static::checkTable($params['table'])) {
+            $model = new static;
+            $db    = $model->getDb();
+
+            $query  = [
+                $params['table'], //
+                '-inf', '+inf', //
+            ];
+            $result = $db->executeCommand('zcount', $query);
+            if (false === is_null($result)) {
+                $return = (int)$result;
+            }
+        }
+
+        return $return;
+    }
 
     /**
      * Получение одной записи
@@ -23,50 +58,46 @@ class SortedsetModel extends ActiveModel
      * @return mixed
      * @throws InvalidParamException
      */
-    public static function getOne($params = [])
+    public static function one($params = [], $remove = false)
     {
-        $params = [
-            'table'   => isset($params['table']) ? (string)$params['table'] : '',
-            'remove'  => isset($params['remove']) ? (bool)$params['remove'] : false,
-            'asArray' => empty($params['asArray']) ? false : (bool)$params['asArray'],
-        ];
-
-        if ('' === $params['table']) {
-            throw new InvalidParamException(Yii::t('app', "Parameter 'table' cannot be blank."));
-        }
-
-        $model = new static;
-        $db    = $model->getDb();
-
-        if (false === $db->exists($params['table'])) {
-            Yii::error(Yii::t('app', "Table not exists: {table}!", $params), __METHOD__ . '(' . __LINE__ . ')');
-            return false;
-        }
-
-        if ($model->type !== $db->type($params['table'])) {
-            Yii::error(Yii::t('app', "Incorrect type of table '{table}'! Must be sorted sets!", $params), __METHOD__ . '(' . __LINE__ . ')');
-            return false;
-        }
-
-        $script = "local element = redis.pcall('ZRANGEBYSCORE', '{$params['table']}', '-inf', '+inf', 'WITHSCORES', 'LIMIT' , '0' , '1')"
-            . ($params['remove'] ? " redis.pcall('ZREM', '{$params['table']}', element[1])" : '')
-            . " return element";
-
-        $result = $db->eval($script, 0);
-        if ($result) {
-            $attributes = array_merge(json_decode($result[0], true), ['score' => $result[1]]);
-            if (empty($params['asArray'])) {
-                $model->setAttributes($attributes);
-                $model->setIsNewRecord(false);
-                $model->afterFind(true);
-            } else {
-                $model = $attributes;
-            }
+        if (is_array($params)) {
+            $params = [
+                'table'  => isset($params['table']) ? (string)$params['table'] : '',
+                'remove' => $remove,
+            ];
         } else {
-            $model = null;
+            $params = [
+                'table'   => (string)$params,
+                'remove'  => $remove,
+                'asArray' => false,
+            ];
         }
 
-        return $model;
+        $return = null;
+        if (static::checkTable($params['table'])) {
+            $model = new static;
+            $db    = $model->getDb();
+
+            $script = "local element = redis.pcall('ZRANGEBYSCORE', '{$params['table']}', '-inf', '+inf', 'WITHSCORES', 'LIMIT' , '0' , '1')"
+                . ($params['remove'] ? " redis.pcall('ZREM', '{$params['table']}', element[1])" : '')
+                . " return element";
+
+            $result = $db->executeCommand('eval', [$script, 0]);
+            if ($result) {
+                $attributes = array_merge(json_decode($result[0], true), ['score' => $result[1]]);
+                if (empty($params['asArray'])) {
+                    $model->table = $params['table'];
+                    $model->setAttributes($attributes);
+                    $model->setIsNewRecord(false);
+                    $model->afterFind(true);
+                } else {
+                    $model = $attributes;
+                }
+                $return = $model;
+            }
+        }
+
+        return $return;
     }
 
     /**
@@ -78,61 +109,56 @@ class SortedsetModel extends ActiveModel
      * @throws InvalidParamException
      * @return mixed
      */
-    public static function getAll($params = [])
+    public static function all($params = [], $limit = 10, $page = 0)
     {
-        $params = [
-            'table'   => isset($params['table']) ? (string)$params['table'] : '',
-            'limit'   => isset($params['limit']) ? (int)$params['limit'] : 0,
-            'page'    => isset($params['page']) ? (int)$params['page'] : 0,
-            'asArray' => empty($params['asArray']) ? false : (bool)$params['asArray'],
-        ];
+        if (is_array($params)) {
+            $params = [
+                'table' => isset($params['table']) ? (string)$params['table'] : '',
+            ];
+        } else {
+            $params = [
+                'table' => (string)$params,
+            ];
+        }
+
+        $params['offset'] = $params['limit'] * $params['offset'];
 
         $return = [];
 
-        if ('' === $params['table']) {
-            throw new InvalidParamException(Yii::t('app', "Parameter 'table' cannot be blank."));
-        }
+        if (static::checkTable($params['table'])) {
+            $model = new static;
+            $db    = $model->getDb();
 
-        $model = new static;
-        $db    = $model->getDb();
+            $model->table = $params['table'];
 
-        if (false === $db->exists($params['table'])) {
-            Yii::error(Yii::t('app', "Table not exists: {table}!", $params), __METHOD__ . '(' . __LINE__ . ')');
-            return false;
-        }
+            $query = [
+                $params['table'], //
+                '-inf', '+inf', //
+                'WITHSCORES',
+            ];
 
-        if ($model->type !== $db->type($params['table'])) {
-            Yii::error(Yii::t('app', "Incorrect type of table '{table}'! Must be sorted sets!", $params), __METHOD__ . '(' . __LINE__ . ')');
-            return false;
-        }
+            if ((int)$limit) {
+                $query[] = 'LIMIT';
+                $query[] = (int)$limit * (int)$page;
+                $query[] = $limit;
+            }
 
-        $query = [
-            $params['table'], //
-            '-inf', '+inf', //
-            'WITHSCORES',
-        ];
+            $result = $db->executeCommand('zrangebyscore', $query);
 
-        if ($params['limit']) {
-            $query[] = 'LIMIT';
-            $query[] = $params['limit'] * $params['page'];
-            $query[] = $params['limit'];
-        }
-
-        $result = $db->executeCommand('zrangebyscore', $query);
-
-        if ($result) {
-            $key = 0;
-            while (isset($result[$key])) {
-                $attributes = array_merge(json_decode($result[$key++], true), ['score' => $result[$key++]]);
-                if (empty($params['asArray'])) {
-                    $row = clone $model;
-                    $row->setAttributes($attributes);
-                    $row->setIsNewRecord(false);
-                    $row->afterFind();
-                } else {
-                    $row = $attributes;
+            if ($result) {
+                $key = 0;
+                while (isset($result[$key])) {
+                    $attributes = array_merge(json_decode($result[$key++], true), ['score' => $result[$key++]]);
+                    if (empty($params['asArray'])) {
+                        $row = clone $model;
+                        $row->setAttributes($attributes);
+                        $row->setIsNewRecord(false);
+                        $row->afterFind();
+                    } else {
+                        $row = $attributes;
+                    }
+                    $return[] = $row;
                 }
-                $return[] = $row;
             }
         }
 
@@ -145,10 +171,10 @@ class SortedsetModel extends ActiveModel
      * @param string $params[pattern] Regexp выборки наименований
      * @return array
      */
-    public static function getTables($params = [])
+    public static function names($params = [])
     {
         $db      = static::getDb();
-        $tables  = [];
+        $names   = [];
         $point   = 0;
         $pattern = '*';
 
@@ -163,7 +189,7 @@ class SortedsetModel extends ActiveModel
 
             if ($rows = $result[1]) {
                 foreach ($rows as $value) {
-                    $tables[] = $value;
+                    $names[] = $value;
                 }
             }
 
@@ -172,7 +198,7 @@ class SortedsetModel extends ActiveModel
             }
         }
 
-        return $tables;
+        return $names;
     }
 
     /**
@@ -181,17 +207,84 @@ class SortedsetModel extends ActiveModel
      * @param string $params[pattern] Regexp выборки наименований
      * @return array
      */
-    public static function getGroups($params = [])
+    public static function groups($params = [])
     {
         $groups = [];
 
-        if ($result = static::getTables($params)) {
+        if ($result = static::names($params)) {
             foreach ($result as $value) {
                 $groups[explode('::', $value)[0]] = '';
             }
         }
 
         return array_keys($groups);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function save($runValidation = true, $attributeNames = NULL)
+    {
+        if ($this->getIsNewRecord()) {
+            return $this->insert($runValidation, $attributeNames);
+        } else {
+            return $this->update($runValidation, $attributeNames) !== false;
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function update($runValidation = true, $attributeNames = NULL)
+    {
+        $attributes = $this->getOldAttributes();
+
+        if ($return = $this->insert($runValidation, $attributeNames)) {
+            $db = static::getDb();
+
+            unset($attributes['score']);
+
+            $query = [
+                $this->table,
+                \yii\helpers\Json::encode($attributes),
+            ];
+
+            $db->executeCommand('zrem', $query);
+        }
+        return $return;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function insert($runValidation = true, $attributes = null)
+    {
+        if ($runValidation && !$this->validate($attributes)) {
+            return false;
+        }
+        if (!$this->beforeSave(true)) {
+            return false;
+        }
+
+        $db     = static::getDb();
+        $values = $this->getAttributes();
+        $score  = $values['score'];
+        unset($values['score']);
+
+        $query = [
+            $this->table,
+            $score,
+            \yii\helpers\Json::encode($values),
+        ];
+        // save pk in a findall pool
+        $db->executeCommand('zadd', $query);
+
+        $values['score'] = $score;
+
+        $this->setOldAttributes($values);
+        $this->afterSave(true, $changedAttributes);
+
+        return true;
     }
 
 }
