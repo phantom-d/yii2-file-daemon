@@ -7,15 +7,13 @@ use yii\base\InvalidParamException;
 
 /**
  * SortedsetModel
- * 
+ *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class SortedsetModel extends ActiveModel
 {
 
     protected static $type = 'zset';
-
-    protected $table = null;
 
     /**
      * @inheritdoc
@@ -24,21 +22,21 @@ class SortedsetModel extends ActiveModel
     {
         if (is_array($params)) {
             $params = [
-                'table' => isset($params['table']) ? (string)$params['table'] : '',
+                'name' => isset($params['name']) ? (string)$params['name'] : '',
             ];
         } else {
             $params = [
-                'table' => (string)$params,
+                'name' => (string)$params,
             ];
         }
 
         $return = null;
-        if (static::checkTable($params['table'])) {
+        if (static::checkTable($params['name'])) {
             $model = new static;
             $db    = $model->getDb();
 
             $query  = [
-                $params['table'], //
+                $params['name'], //
                 '-inf', '+inf', //
             ];
             $result = $db->executeCommand('zcount', $query);
@@ -62,31 +60,31 @@ class SortedsetModel extends ActiveModel
     {
         if (is_array($params)) {
             $params = [
-                'table'  => isset($params['table']) ? (string)$params['table'] : '',
+                'name'   => isset($params['name']) ? (string)$params['name'] : '',
                 'remove' => $remove,
             ];
         } else {
             $params = [
-                'table'   => (string)$params,
+                'name'    => (string)$params,
                 'remove'  => $remove,
                 'asArray' => false,
             ];
         }
 
         $return = null;
-        if (static::checkTable($params['table'])) {
+        if (static::checkTable($params['name'])) {
             $model = new static;
             $db    = $model->getDb();
 
-            $script = "local element = redis.pcall('ZRANGEBYSCORE', '{$params['table']}', '-inf', '+inf', 'WITHSCORES', 'LIMIT' , '0' , '1')"
-                . ($params['remove'] ? " redis.pcall('ZREM', '{$params['table']}', element[1])" : '')
+            $script = "local element = redis.pcall('ZRANGEBYSCORE', '{$params['name']}', '-inf', '+inf', 'WITHSCORES', 'LIMIT' , '0' , '1')"
+                . ($params['remove'] ? " redis.pcall('ZREM', '{$params['name']}', element[1])" : '')
                 . " return element";
 
             $result = $db->executeCommand('eval', [$script, 0]);
             if ($result) {
                 $attributes = array_merge(json_decode($result[0], true), ['score' => $result[1]]);
                 if (empty($params['asArray'])) {
-                    $model->table = $params['table'];
+                    $model->tableName = $params['name'];
                     $model->setAttributes($attributes);
                     $model->setIsNewRecord(false);
                     $model->afterFind(true);
@@ -102,8 +100,8 @@ class SortedsetModel extends ActiveModel
 
     /**
      * Получение списка записей
-     * 
-     * @param string $params['table'] Наименование ключа в RedisDB
+     *
+     * @param string $params['name'] Наименование ключа в RedisDB
      * @param integer $params['limit'] Количество.
      * @param integer $params['page'] Номер страницы.
      * @throws InvalidParamException
@@ -113,11 +111,11 @@ class SortedsetModel extends ActiveModel
     {
         if (is_array($params)) {
             $params = [
-                'table' => isset($params['table']) ? (string)$params['table'] : '',
+                'name' => isset($params['name']) ? (string)$params['name'] : '',
             ];
         } else {
             $params = [
-                'table' => (string)$params,
+                'name' => (string)$params,
             ];
         }
 
@@ -125,14 +123,14 @@ class SortedsetModel extends ActiveModel
 
         $return = [];
 
-        if (static::checkTable($params['table'])) {
+        if (static::checkTable($params['name'])) {
             $model = new static;
             $db    = $model->getDb();
 
-            $model->table = $params['table'];
+            $model->tableName = $params['name'];
 
             $query = [
-                $params['table'], //
+                $params['name'], //
                 '-inf', '+inf', //
                 'WITHSCORES',
             ];
@@ -203,7 +201,7 @@ class SortedsetModel extends ActiveModel
 
     /**
      * Получение списка наименований групп задач
-     * 
+     *
      * @param string $params[pattern] Regexp выборки наименований
      * @return array
      */
@@ -245,7 +243,7 @@ class SortedsetModel extends ActiveModel
             unset($attributes['score']);
 
             $query = [
-                $this->table,
+                $this->tableName,
                 \yii\helpers\Json::encode($attributes),
             ];
 
@@ -257,13 +255,19 @@ class SortedsetModel extends ActiveModel
     /**
      * @inheritdoc
      */
-    public function insert($runValidation = true, $attributes = null)
+    public function insert($runValidation = true, $attributeNames = null)
     {
-        if ($runValidation && !$this->validate($attributes)) {
+        if ($runValidation && !$this->validate($attributeNames)) {
             return false;
         }
         if (!$this->beforeSave(true)) {
             return false;
+        }
+
+        $changedAttributes = $this->getDirtyAttributes($attributeNames);
+        if (empty($changedAttributes)) {
+            $this->afterSave(false, $changedAttributes);
+            return 0;
         }
 
         $db     = static::getDb();
@@ -272,7 +276,7 @@ class SortedsetModel extends ActiveModel
         unset($values['score']);
 
         $query = [
-            $this->table,
+            $this->tableName,
             $score,
             \yii\helpers\Json::encode($values),
         ];
@@ -285,6 +289,88 @@ class SortedsetModel extends ActiveModel
         $this->afterSave(true, $changedAttributes);
 
         return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function delete()
+    {
+        $result = false;
+        if ($this->beforeDelete()) {
+            $db = static::getDb();
+
+            $attributes = $this->getOldAttributes();
+            unset($attributes['score']);
+
+            $query = [
+                $this->tableName,
+                \yii\helpers\Json::encode($attributes),
+            ];
+
+            $result = $db->executeCommand('zrem', $query);
+
+            $this->_oldAttributes = null;
+            $this->afterDelete();
+        }
+
+        return $result;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function rename($params = [])
+    {
+        $result = false;
+
+        if (empty($params) || is_array($params)) {
+            return $result;
+        }
+
+        $this->tableRename = (string)$params;
+
+        if ($this->beforeRename()) {
+            $db = static::getDb();
+
+            $query = [
+                $this->tableName,
+                $this->tableRename,
+            ];
+
+            $result = (bool)$db->executeCommand('renamenx', $query);
+
+            $this->tableRename = null;
+            $this->afterRename();
+        }
+
+        return $result;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function remove()
+    {
+        $result = false;
+        if ($this->beforeRemove()) {
+            $db = static::getDb();
+
+            $attributes = $this->getOldAttributes();
+            unset($attributes['score']);
+
+            $query = [
+                $this->tableName,
+                \yii\helpers\Json::encode($attributes),
+            ];
+
+            $result = (bool)$db->executeCommand('del', $query);
+
+            $this->_oldAttributes = null;
+            $this->afterRemove();
+        }
+
+        return $result;
     }
 
 }

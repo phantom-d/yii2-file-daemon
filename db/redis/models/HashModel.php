@@ -22,21 +22,21 @@ class HashModel extends ActiveModel
     {
         if (is_array($params)) {
             $params = [
-                'table' => isset($params['table']) ? (string)$params['table'] : static::tableName(),
+                'name' => isset($params['name']) ? (string)$params['name'] : static::tableName(),
             ];
         } else {
             $params = [
-                'table' => $params ? (string)$params : static::tableName(),
+                'name' => $params ? (string)$params : static::tableName(),
             ];
         }
 
         $return = null;
-        if (static::checkTable($params['table'])) {
+        if (static::checkTable($params['name'])) {
             $model = new static;
             $db    = $model->getDb();
 
             $query  = [
-                $params['table'], //
+                $params['name'], //
             ];
             $result = $db->executeCommand('hlen', $query);
             if (false === is_null($result)) {
@@ -57,18 +57,17 @@ class HashModel extends ActiveModel
     public static function one($params = '')
     {
         $return = null;
-        $table  = static::tableName();
+        $model  = new static;
 
-        if (static::checkTable($table)) {
-            $db    = static::getDb();
-            $model = new static;
+        if (static::checkTable($model->tableName)) {
+            $db = static::getDb();
 
             $attributes = null;
 
             if ($params) {
                 $params = (string)$params;
                 $query  = [
-                    $table,
+                    $model->tableName,
                     $params,
                 ];
 
@@ -78,7 +77,7 @@ class HashModel extends ActiveModel
                 }
             } else {
                 $query = [
-                    $table, 0,
+                    $model->tableName, 0,
                     'COUNT', 1
                 ];
 
@@ -114,12 +113,11 @@ class HashModel extends ActiveModel
         }
 
         $return = [];
-        $table  = static::tableName();
+        $model  = new static;
 
-        if (static::checkTable($table)) {
-            $model = new static;
+        if (static::checkTable($model->tableName)) {
             $db    = $model->getDb();
-            $query = [$table];
+            $query = [$model->tableName];
 
             if (empty($params)) {
                 $offset = 0;
@@ -127,10 +125,15 @@ class HashModel extends ActiveModel
                     $limit = (int)$limit;
                     $page  = (int)$page;
 
-                    $script = "local page = 0 local limit = {$limit} local cursor = 0 local elements = {}"
-                        . " while true do  local result = redis.pcall('HSCAN', '{$table}', cursor, 'COUNT', limit) local count  = table.getn(result[2])/2"
-                        . " cursor = result[1] if page == {$page} then local j = limit * 2 for i=1,j do elements[i] = result[2][i] end break end page = page + 1 end"
-                        . " return elements";
+                    $script = "local page = 0 local limit = {$limit} local cursor = 0 local elements = {} "
+                        . "while true do "
+                        . "local result = redis.pcall('HSCAN', '{$model->tableName}', cursor, 'COUNT', limit) "
+                        . "local count  = table.getn(result[2])/2 cursor = result[1] "
+                        . "if (cursor == 0 and page < {$page}) then break end "
+                        . "if (page == {$page}) then elements = result[2] break end "
+                        . "page = page + 1 "
+                        . "end "
+                        . "return elements";
 
                     $result = $db->executeCommand('eval', [$script, 0]);
                 } else {
@@ -176,14 +179,14 @@ class HashModel extends ActiveModel
      */
     public function save($runValidation = true, $attributeNames = NULL)
     {
-        if ($runValidation && !$this->validate($attributes)) {
+        if ($runValidation && !$this->validate($attributeNames)) {
             return false;
         }
         if (!$this->beforeSave(true)) {
             return false;
         }
 
-        $changedAttributes = $this->getDirtyAttributes($attributes);
+        $changedAttributes = $this->getDirtyAttributes($attributeNames);
         if (empty($changedAttributes)) {
             $this->afterSave(false, $changedAttributes);
             return 0;
@@ -219,9 +222,34 @@ class HashModel extends ActiveModel
     /**
      * @inheritdoc
      */
-    public function insert($runValidation = true, $attributes = null)
+    public function insert($runValidation = true, $attributeNames = null)
     {
         return $this->save($runValidation, $attributeNames);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function delete()
+    {
+        $result = false;
+        if ($this->beforeDelete()) {
+            $db = static::getDb();
+
+            $attributes = $this->getOldAttributes();
+
+            $query = [
+                $this->tableName,
+                $attributes['name'],
+            ];
+
+            $result = $db->executeCommand('hdel', $query);
+
+            $this->_oldAttributes = null;
+            $this->afterDelete();
+        }
+
+        return $result;
     }
 
 }

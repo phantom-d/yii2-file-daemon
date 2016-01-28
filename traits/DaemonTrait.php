@@ -15,11 +15,13 @@ trait DaemonTrait
 
     protected $processing = null;
 
-    protected $component  = null;
+    protected $component = null;
 
     public function init()
     {
         parent::init();
+
+        $this->configName = empty(static::$configAlias) ? '' : static::$configAlias;
 
         $this->getConfig();
 

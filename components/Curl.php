@@ -41,13 +41,13 @@ class Curl
      * @var integer HTTP-Status Code
      * This value will hold HTTP-Status Code. False if request was not successful.
      */
-    public $responseCode = null;
+    public $code = null;
 
-    public $responseInfo = null;
+    public $info = null;
 
-    public $responseError = null;
+    public $error = null;
 
-    public $responseErrNo = null;
+    public $errNo = null;
 
     /**
      * @var array HTTP-Status Code
@@ -216,8 +216,8 @@ class Curl
         }
 
         //reset response & status code
-        $this->response     = null;
-        $this->responseCode = null;
+        $this->response = null;
+        $this->code     = null;
 
         return $this;
     }
@@ -271,8 +271,7 @@ class Curl
             $this->setOption(CURLOPT_NOBODY, true);
             $this->unsetOption(CURLOPT_WRITEFUNCTION);
         } else {
-            $this->setOption(CURLOPT_WRITEFUNCTION,
-                function ($curl, $data) use (&$body) {
+            $this->setOption(CURLOPT_WRITEFUNCTION, function ($curl, $data) use (&$body) {
                 $body .= $data;
                 return mb_strlen($data, '8bit');
             });
@@ -289,12 +288,12 @@ class Curl
         curl_setopt_array($curl, $this->getOptions());
         $body = curl_exec($curl);
 
-        $this->responseInfo  = curl_getinfo($curl);
+        $this->info     = curl_getinfo($curl);
         //retrieve response code
-        $this->responseCode  = $this->responseInfo['http_code'];
-        $this->response      = $body;
-        $this->responseError = curl_error($curl);
-        $this->responseErrNo = curl_errno($curl);
+        $this->code     = $this->info['http_code'];
+        $this->response = $body;
+        $this->error    = curl_error($curl);
+        $this->errNo    = curl_errno($curl);
 
         //stop curl
         curl_close($curl);
@@ -303,11 +302,11 @@ class Curl
         Yii::endProfile("{$method} {$url}#" . md5(serialize($this->getOption(CURLOPT_POSTFIELDS))), __METHOD__);
 
         $return = true;
-        if ($this->responseErrNo) {
+        if ($this->errNo) {
             $return = false;
         }
         //check responseCode and return data/status
-        if ($this->responseCode >= 200 && $this->responseCode < 300) {
+        if ($this->code >= 200 && $this->code < 300) {
             // all between 200 && 300 is successful
             if ($this->getOption(CURLOPT_CUSTOMREQUEST) === 'HEAD') {
                 $return = true;
@@ -316,10 +315,10 @@ class Curl
 
                 $return = $this->response;
             }
-        } elseif ($this->responseCode >= 400 && $this->responseCode <= 510) {
+        } elseif ($this->code >= 400 && $this->code <= 510) {
             // client and server errors return false.
             $return = false;
-        } elseif ($this->responseCode === 0) {
+        } elseif ($this->code === 0) {
             // server not response
             $return = false;
         } else {

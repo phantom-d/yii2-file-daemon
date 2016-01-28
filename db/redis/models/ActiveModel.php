@@ -15,15 +15,23 @@ use yii\helpers\StringHelper;
 class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaemon\db\ActiveInterface
 {
 
-    protected static $dbConfig = [
-        'hostname' => 'localhost',
-        'port'     => 6379,
-        'database' => 0,
-    ];
+    use \phantomd\filedaemon\traits\dbEventsTrait;
+
+    protected static $type = '';
 
     protected static $db = null;
 
     protected static $errors = [];
+
+    protected $tableRename = null;
+
+    public $tableName      = null;
+
+    public function init()
+    {
+        parent::init();
+        $this->tableName = static::tableName();
+    }
 
     /**
      * @inheritdoc
@@ -36,6 +44,12 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
     public static function model($params = [])
     {
         $model = new static;
+
+        if ('zset' === static::$type && isset($params['name'])) {
+            $model->tableName = $params['name'];
+            unset($params['name']);
+        }
+
         if ($params) {
             $model->setAttributes($params);
         }
@@ -75,12 +89,12 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
         throw new NotSupportedException();
     }
 
-    public function remove()
+    public function rename($params = [])
     {
         throw new NotSupportedException();
     }
 
-    public function rename($params = [])
+    public function remove()
     {
         throw new NotSupportedException();
     }
@@ -117,22 +131,29 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
         $table = (string)$table;
 
         if ('' === $table) {
-            $message                 = \Yii::t('app', "Parameter 'table' cannot be blank.");
+            $message = \Yii::t('app', "Parameter 'table' cannot be blank.");
+
             static::$errors['table'] = $message;
             \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
             return false;
         }
 
-        $db = static::getDb();
-        if (false === $db->exists($table)) {
-            $message                 = \Yii::t('app', "Table not exists: {table}!", ['table' => $table]);
+        $db    = static::getDb();
+        $query = [$table];
+
+        if (false === $db->executeCommand('exists', $query)) {
+            $message = \Yii::t('app', "Table not exists: {table}!", ['table' => $table]);
+
             static::$errors['table'] = $message;
             \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
             return false;
         }
 
-        if (static::$type !== $db->type($table)) {
-            $message                 = \Yii::t('app', "Incorrect type of table '{table}'! Must be sorted sets!", ['table' => $table]);
+        $type = $db->executeCommand('type', $query);
+
+        if ($type && 'none' !== $type && static::$type !== $type) {
+            $message = \Yii::t('app', "Incorrect type of table '{table}'! Must be sorted sets!", ['table' => $table]);
+
             static::$errors['table'] = $message;
             \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
             return false;
