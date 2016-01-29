@@ -4,7 +4,7 @@ namespace phantomd\filedaemon\traits;
 
 use yii\base\ModelEvent;
 
-trait dbEventsTrait
+trait DbEventsTrait
 {
 
     /**

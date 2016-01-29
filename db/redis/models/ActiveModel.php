@@ -15,7 +15,7 @@ use yii\helpers\StringHelper;
 class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaemon\db\ActiveInterface
 {
 
-    use \phantomd\filedaemon\traits\dbEventsTrait;
+    use \phantomd\filedaemon\traits\DbEventsTrait;
 
     protected static $type = '';
 
@@ -25,12 +25,12 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
 
     protected $tableRename = null;
 
-    public $tableName      = null;
+    public static $tableName = null;
 
     public function init()
     {
         parent::init();
-        $this->tableName = static::tableName();
+        $this->tableName = $this->tableName();
     }
 
     /**
@@ -122,13 +122,12 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
     /**
      * Проверка наличия и соответствие типа ключа в RedisDB
      * 
-     * @param string $table
      * @return boolean
      * @throws InvalidParamException
      */
-    protected static function checkTable($table = '')
+    protected function checkTable()
     {
-        $table = (string)$table;
+        $table = $this->tableName();
 
         if ('' === $table) {
             $message = \Yii::t('app', "Parameter 'table' cannot be blank.");
@@ -160,16 +159,6 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
         }
 
         return true;
-    }
-
-    public static function getModelErrors()
-    {
-        $return = null;
-        if (static::$errors) {
-            $return = static::$errors;
-        }
-
-        return $return;
     }
 
 }

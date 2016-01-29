@@ -20,21 +20,21 @@ class HashModel extends ActiveModel
      */
     public static function count($params = [])
     {
+        $return = null;
+        $model  = static::model();
+
         if (is_array($params)) {
             $params = [
-                'name' => isset($params['name']) ? (string)$params['name'] : static::tableName(),
+                'name' => isset($params['name']) ? (string)$params['name'] : $model->tableName(),
             ];
         } else {
             $params = [
-                'name' => $params ? (string)$params : static::tableName(),
+                'name' => $params ? (string)$params : $model->tableName(),
             ];
         }
 
-        $return = null;
-        if (static::checkTable($params['name'])) {
-            $model = new static;
-            $db    = $model->getDb();
-
+        if ($model->checkTable()) {
+            $db     = static::getDb();
             $query  = [
                 $params['name'], //
             ];
@@ -57,17 +57,18 @@ class HashModel extends ActiveModel
     public static function one($params = '')
     {
         $return = null;
-        $model  = new static;
+        $model  = static::model();
 
-        if (static::checkTable($model->tableName)) {
-            $db = static::getDb();
+        if ($model->checkTable()) {
+            $db    = static::getDb();
+            $table = $model->tableName();
 
             $attributes = null;
 
             if ($params) {
                 $params = (string)$params;
                 $query  = [
-                    $model->tableName,
+                    $table,
                     $params,
                 ];
 
@@ -77,7 +78,7 @@ class HashModel extends ActiveModel
                 }
             } else {
                 $query = [
-                    $model->tableName, 0,
+                    $table, 0,
                     'COUNT', 1
                 ];
 
@@ -113,11 +114,12 @@ class HashModel extends ActiveModel
         }
 
         $return = [];
-        $model  = new static;
+        $model  = static::model();
 
-        if (static::checkTable($model->tableName)) {
-            $db    = $model->getDb();
-            $query = [$model->tableName];
+        if ($model->checkTable()) {
+            $db    = static::getDb();
+            $table = $this->tableName();
+            $query = [$table];
 
             if (empty($params)) {
                 $offset = 0;
@@ -127,10 +129,10 @@ class HashModel extends ActiveModel
 
                     $script = "local page = 0 local limit = {$limit} local cursor = 0 local elements = {} "
                         . "while true do "
-                        . "local result = redis.pcall('HSCAN', '{$model->tableName}', cursor, 'COUNT', limit) "
+                        . "local result = redis.pcall('HSCAN', '{$table}', cursor, 'COUNT', limit) "
                         . "local count  = table.getn(result[2])/2 cursor = result[1] "
-                        . "if (cursor == 0 and page < {$page}) then break end "
                         . "if (page == {$page}) then elements = result[2] break end "
+                        . "if (cursor == 0) then break end "
                         . "page = page + 1 "
                         . "end "
                         . "return elements";
@@ -195,7 +197,7 @@ class HashModel extends ActiveModel
         $db     = static::getDb();
         $values = $this->getAttributes();
 
-        $query  = [static::tableName()];
+        $query  = [$this->tableName()];
         $result = $this->attributes();
 
         $key = 0;
@@ -239,7 +241,7 @@ class HashModel extends ActiveModel
             $attributes = $this->getOldAttributes();
 
             $query = [
-                $this->tableName,
+                $this->tableName(),
                 $attributes['name'],
             ];
 

@@ -18,6 +18,18 @@ class SortedsetModel extends ActiveModel
     /**
      * @inheritdoc
      */
+    public static function tableName()
+    {
+        if (empty(static::$tableName)) {
+            return parent::tableName();
+        }
+
+        return static::$tableName;
+    }
+
+    /**
+     * @inheritdoc
+     */
     public static function count($params = [])
     {
         if (is_array($params)) {
@@ -31,12 +43,13 @@ class SortedsetModel extends ActiveModel
         }
 
         $return = null;
-        if (static::checkTable($params['name'])) {
-            $model = new static;
-            $db    = $model->getDb();
+        $model  = static::model($params);
+
+        if ($model->checkTable()) {
+            $db = static::getDb();
 
             $query  = [
-                $params['name'], //
+                $model->tableName(), //
                 '-inf', '+inf', //
             ];
             $result = $db->executeCommand('zcount', $query);
@@ -60,21 +73,21 @@ class SortedsetModel extends ActiveModel
     {
         if (is_array($params)) {
             $params = [
-                'name'   => isset($params['name']) ? (string)$params['name'] : '',
-                'remove' => $remove,
+                'name' => isset($params['name']) ? (string)$params['name'] : '',
             ];
         } else {
             $params = [
-                'name'    => (string)$params,
-                'remove'  => $remove,
-                'asArray' => false,
+                'name' => (string)$params,
             ];
         }
 
+        $params['remove'] = (bool)$remove;
+
         $return = null;
-        if (static::checkTable($params['name'])) {
-            $model = new static;
-            $db    = $model->getDb();
+        $model  = static::model($params);
+
+        if ($model->checkTable()) {
+            $db = static::getDb();
 
             $script = "local element = redis.pcall('ZRANGEBYSCORE', '{$params['name']}', '-inf', '+inf', 'WITHSCORES', 'LIMIT' , '0' , '1')"
                 . ($params['remove'] ? " redis.pcall('ZREM', '{$params['name']}', element[1])" : '')
@@ -83,14 +96,10 @@ class SortedsetModel extends ActiveModel
             $result = $db->executeCommand('eval', [$script, 0]);
             if ($result) {
                 $attributes = array_merge(json_decode($result[0], true), ['score' => $result[1]]);
-                if (empty($params['asArray'])) {
-                    $model->tableName = $params['name'];
-                    $model->setAttributes($attributes);
-                    $model->setIsNewRecord(false);
-                    $model->afterFind(true);
-                } else {
-                    $model = $attributes;
-                }
+
+                $model->setAttributes($attributes);
+                $model->setIsNewRecord(false);
+                $model->afterFind();
                 $return = $model;
             }
         }
@@ -119,18 +128,14 @@ class SortedsetModel extends ActiveModel
             ];
         }
 
-        $params['offset'] = $params['limit'] * $params['offset'];
-
         $return = [];
+        $model  = static::model($params);
 
-        if (static::checkTable($params['name'])) {
-            $model = new static;
-            $db    = $model->getDb();
-
-            $model->tableName = $params['name'];
+        if ($model->checkTable()) {
+            $db = static::getDb();
 
             $query = [
-                $params['name'], //
+                $model->tableName(), //
                 '-inf', '+inf', //
                 'WITHSCORES',
             ];
@@ -147,14 +152,11 @@ class SortedsetModel extends ActiveModel
                 $key = 0;
                 while (isset($result[$key])) {
                     $attributes = array_merge(json_decode($result[$key++], true), ['score' => $result[$key++]]);
-                    if (empty($params['asArray'])) {
-                        $row = clone $model;
-                        $row->setAttributes($attributes);
-                        $row->setIsNewRecord(false);
-                        $row->afterFind();
-                    } else {
-                        $row = $attributes;
-                    }
+
+                    $row      = clone $model;
+                    $row->setAttributes($attributes);
+                    $row->setIsNewRecord(false);
+                    $row->afterFind();
                     $return[] = $row;
                 }
             }
@@ -173,16 +175,16 @@ class SortedsetModel extends ActiveModel
     {
         $db      = static::getDb();
         $names   = [];
-        $point   = 0;
+        $cursor  = 0;
         $pattern = '*';
 
         if (isset($params['pattern'])) {
             $pattern = (string)$params['pattern'];
         }
 
-        while ($result = $db->executeCommand('scan', [$point, 'MATCH', $pattern, 'COUNT', 10000])) {
-            if ($point !== (int)$result[0]) {
-                $point = (int)$result[0];
+        while ($result = $db->executeCommand('scan', [$cursor, 'MATCH', $pattern, 'COUNT', 10000])) {
+            if ($cursor !== (int)$result[0]) {
+                $cursor = (int)$result[0];
             }
 
             if ($rows = $result[1]) {
@@ -191,7 +193,7 @@ class SortedsetModel extends ActiveModel
                 }
             }
 
-            if (0 === $point) {
+            if (0 === $cursor) {
                 break;
             }
         }
@@ -235,19 +237,11 @@ class SortedsetModel extends ActiveModel
      */
     public function update($runValidation = true, $attributeNames = NULL)
     {
-        $attributes = $this->getOldAttributes();
-
-        if ($return = $this->insert($runValidation, $attributeNames)) {
-            $db = static::getDb();
-
-            unset($attributes['score']);
-
-            $query = [
-                $this->tableName,
-                \yii\helpers\Json::encode($attributes),
-            ];
-
-            $db->executeCommand('zrem', $query);
+        if ($this->getDirtyAttributes($attributeNames)) {
+            $model  = clone $this;
+            if ($return = $this->insert($runValidation, $attributeNames)) {
+                $model->delete();
+            }
         }
         return $return;
     }
@@ -276,7 +270,7 @@ class SortedsetModel extends ActiveModel
         unset($values['score']);
 
         $query = [
-            $this->tableName,
+            $this->tableName(),
             $score,
             \yii\helpers\Json::encode($values),
         ];
@@ -304,13 +298,13 @@ class SortedsetModel extends ActiveModel
             unset($attributes['score']);
 
             $query = [
-                $this->tableName,
+                $this->tableName(),
                 \yii\helpers\Json::encode($attributes),
             ];
 
             $result = $db->executeCommand('zrem', $query);
 
-            $this->_oldAttributes = null;
+            $this->setOldAttributes(null);
             $this->afterDelete();
         }
 
@@ -334,11 +328,13 @@ class SortedsetModel extends ActiveModel
             $db = static::getDb();
 
             $query = [
-                $this->tableName,
+                $this->tableName(),
                 $this->tableRename,
             ];
 
-            $result = (bool)$db->executeCommand('renamenx', $query);
+            if ($result = (bool)$db->executeCommand('renamenx', $query)) {
+                $this->tableName = $this->tableRename;
+            }
 
             $this->tableRename = null;
             $this->afterRename();
@@ -360,13 +356,13 @@ class SortedsetModel extends ActiveModel
             unset($attributes['score']);
 
             $query = [
-                $this->tableName,
+                $this->tableName(),
                 \yii\helpers\Json::encode($attributes),
             ];
 
             $result = (bool)$db->executeCommand('del', $query);
 
-            $this->_oldAttributes = null;
+            $this->setOldAttributes(null);
             $this->afterRemove();
         }
 

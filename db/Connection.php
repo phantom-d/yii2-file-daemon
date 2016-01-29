@@ -29,7 +29,33 @@ class Connection extends Component
     function init()
     {
         parent::init();
+        $this->renewConnections();
+    }
 
+    public function __call($name, $params)
+    {
+        if (false === empty($params)) {
+            $params = $params[0];
+        }
+
+        $method = explode('-', Inflector::camel2id($name));
+        $model  = array_shift($method);
+        $method = lcfirst(Inflector::id2camel(implode('-', $method)));
+        $class  = isset($this->models[$model]) ? $this->models[$model] : null;
+
+        if ($class && method_exists($class, $method)) {
+            $params = $params ? [$params] : [];
+            return call_user_func_array([$class, $method], $params);
+        }
+
+        throw new UnknownMethodException('Calling unknown method: ' . get_class($this) . "::{$name}()");
+    }
+
+    /**
+     * Renew connections
+     */
+    public function renewConnections()
+    {
         $defaults = isset($this->params['default']) ? $this->params['default'] : null;
 
         foreach (array_keys($this->models) as $model) {
@@ -60,28 +86,15 @@ class Connection extends Component
                 }
 
                 \Yii::$app->set('filedaemon_' . $model, $config['db']);
-                $this->models[$model] = __NAMESPACE__ . '\\' . $config['driver'] . '\\models\\' . ucfirst($model);
+                $class = __NAMESPACE__ . '\\' . $config['driver'] . '\\models\\' . ucfirst($model);
+                
+                if (class_exists($class)) {
+                    $this->models[$model] = $class;
+                } else {
+                    throw new \yii\db\Exception('Model not exists: ' . $class);
+                }
             }
         }
-    }
-
-    public function __call($name, $params)
-    {
-        if (false === empty($params)) {
-            $params = $params[0];
-        }
-
-        $method = explode('-', Inflector::camel2id($name));
-        $model  = array_shift($method);
-        $method = lcfirst(Inflector::id2camel(implode('-', $method)));
-        $class  = isset($this->models[$model]) ? $this->models[$model] : null;
-
-        if ($class && method_exists($class, $method)) {
-            $params = $params ? [$params] : [];
-            return call_user_func_array([$class, $method], $params);
-        }
-
-        throw new UnknownMethodException('Calling unknown method: ' . get_class($this) . "::{$name}()");
     }
 
     /**
