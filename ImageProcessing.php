@@ -115,7 +115,7 @@ class ImageProcessing extends FileProcessing
                     }
                 }
 
-                if ($this->convertImage($itemData)) {
+                if ($this->makeFile($itemData)) {
                     if (is_file($targetPath . DIRECTORY_SEPARATOR . basename($url))) {
                         $return = $targetPath . DIRECTORY_SEPARATOR . basename($url);
                     }
@@ -165,14 +165,18 @@ class ImageProcessing extends FileProcessing
      * 
      * @return boolean
      */
-    public function convertImage($params)
+    public function makeFile($params = [])
     {
-        \Yii::trace($params, __METHOD__ . '(' . __LINE__ . ')');
+        YII_DEBUG && \Yii::trace($params, __METHOD__ . '(' . __LINE__ . ')');
 
         $return = false;
+        if (false === parent::makeFile($params)) {
+            return $return;
+        }
         if (empty($params)) {
             return $return;
         }
+
         $source = $params['source'];
         if (false === is_file($source)) {
             $source = $params['directories']['source'] . DIRECTORY_SEPARATOR . basename($params['source']);
@@ -212,7 +216,7 @@ class ImageProcessing extends FileProcessing
                 }
 
                 if (false === empty($image['width']) || false === empty($image['height'])) {
-                    \Yii::trace($image, __METHOD__ . '(' . __LINE__ . ')');
+                    YII_DEBUG && \Yii::trace($image, __METHOD__ . '(' . __LINE__ . ')');
                     if (empty($image['width'])) {
                         if (false === empty($image['height'])) {
                             if ($crop && 1 > $crop) {
@@ -237,7 +241,7 @@ class ImageProcessing extends FileProcessing
                         }
                     }
 
-                    \Yii::trace('$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
+                    YII_DEBUG && \Yii::trace('$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
 
                     if (empty($image['height'])) {
                         if (false === empty($image['width'])) {
@@ -262,7 +266,7 @@ class ImageProcessing extends FileProcessing
                             $resizeParams .= "{$image['height']}>' ";
                         }
                     }
-                    \Yii::trace('$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
+                    YII_DEBUG && \Yii::trace('$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
                 }
 
                 if ($crop && false === empty($resizeParams)) {
@@ -282,8 +286,8 @@ class ImageProcessing extends FileProcessing
             }
         }
 
-        \Yii::trace('$command: ' . $command, __METHOD__ . '(' . __LINE__ . ')');
-        \Yii::trace($return, __METHOD__ . '(' . __LINE__ . ')');
+        YII_DEBUG && \Yii::trace('$command: ' . $command, __METHOD__ . '(' . __LINE__ . ')');
+        YII_DEBUG && \Yii::trace($return, __METHOD__ . '(' . __LINE__ . ')');
 
         return $return;
     }

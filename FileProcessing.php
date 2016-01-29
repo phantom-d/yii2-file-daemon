@@ -224,9 +224,7 @@ class FileProcessing extends \yii\base\Component
      */
     public function getFileName($url)
     {
-        if (YII_DEBUG) {
-            \Yii::trace($url, __METHOD__ . '(' . __LINE__ . ')');
-        }
+        YII_DEBUG && \Yii::trace($url, __METHOD__ . '(' . __LINE__ . ')');
 
         $return       = false;
         $sanitizedUrl = filter_var($url, FILTER_SANITIZE_URL);
@@ -272,18 +270,13 @@ class FileProcessing extends \yii\base\Component
      *
      * @param string $url Ссылка для получения файла
      * @param string $file Полный путь для сохранения файла
-     * @param string $type Тип файла.
      * @return mixed Имя полный путь к полученному файлу | FALSE
      */
-    public function getFile($url, $file, $type = 'text')
+    public function getFile($url, $file)
     {
         if (YII_DEBUG) {
             $args = func_get_args();
             \Yii::trace('getFile $args: ' . var_export($args, true), __METHOD__ . '(' . __LINE__ . ')');
-        }
-
-        if (empty($type)) {
-            $type = 'text';
         }
 
         $return       = false;
@@ -298,7 +291,7 @@ class FileProcessing extends \yii\base\Component
             );
 
             `{$command}`;
-            \Yii::trace($command, __METHOD__ . '(' . __LINE__ . ')');
+            YII_DEBUG && \Yii::trace($command, __METHOD__ . '(' . __LINE__ . ')');
 
             if (is_file($file)) {
                 $type = true;
@@ -329,4 +322,94 @@ class FileProcessing extends \yii\base\Component
         return $return;
     }
 
+    /**
+     * Отправка результатов обработки не активных задач
+     */
+    public function transferResults()
+    {
+        $separator = '::';
+
+        if ($names = $this->resultNames(['separator' => $separator])) {
+            foreach ($names as $name) {
+                $id  = end($name);
+                if ($job = $this->jobsOne($id)) {
+                    if ($job->status && false === $job->statusWork) {
+                        $this->transfer($id);
+                    }
+                } else {
+                    $model = $this->resultModel(implode($separator, $name));
+                    $model->remove();
+                }
+            }
+        }
+    }
+
+    /**
+     * Отправка результатов обработки задач
+     *
+     * @param string $id ID задачи
+     * @return boolean
+     */
+    public function transfer($id)
+    {
+        \Yii::info('Do transfer - start!', __METHOD__ . '(' . __LINE__ . ')');
+        $return = false;
+        if (false === empty($id)) {
+            $job = $this->jobOne($id);
+            if ($job) {
+                $name  = $job->group . '::' . $id;
+                $total = $this->resultCount($name);
+                $page  = 0;
+
+                while ($result = $this->resultAll($name, 100, $page++)) {
+                    $data = [];
+                    foreach ($result as $model) {
+                        $data[] = [
+                            'command'   => $model->command,
+                            'object_id' => $model->object_id,
+                            'url'       => $model->time_dir . DIRECTORY_SEPARATOR . $model->file_name,
+                            'image_id'  => $model->image_id,
+                        ];
+                    }
+
+                    if ($data) {
+                        $curl = new components\Curl;
+                        $curl->setOption(CURLOPT_POSTFIELDS, http_build_query(['data' => $data]));
+                        if ($curl->post($job->callback)) {
+                            $message = "Send data successful!\n\t"
+                                . "table: {$name},\n\t"
+                                . "total: {$total},\n\t"
+                                . "sended: " . count($data) . ",\n\t"
+                                . "page: {$page}";
+                            \Yii::info($message, __METHOD__ . '(' . __LINE__ . ')');
+                            $return  = true;
+                        } else {
+                            $message = "Send data to callback was error!\n"
+                                . "\nresponse: " . var_export($curl->response, true)
+                                . "\ncode: " . var_export($curl->code, true)
+                                . "\nerror: " . var_export($curl->error, true)
+                                . "\ninfo: " . var_export($curl->info, true);
+                            \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
+                        }
+                    }
+                }
+            }
+        } else {
+            \Yii::error("Incorrect job ID: " . $id, __METHOD__ . '(' . __LINE__ . ')');
+        }
+
+        if ($return) {
+            \Yii::info('Delete table: ' . $name, __METHOD__ . '(' . __LINE__ . ')');
+            $model = $this->resultModel($name);
+            $model->remove();
+        }
+
+        \Yii::info('Do transfer - end!', __METHOD__ . '(' . __LINE__ . ')');
+        return $return;
+    }
+
+    public function makeFile($params = [])
+    {
+        return true;
+    }
 }

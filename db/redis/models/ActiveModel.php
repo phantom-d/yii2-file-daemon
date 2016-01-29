@@ -25,7 +25,7 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
 
     protected $tableRename = null;
 
-    public static $tableName = null;
+    protected $tableName = null;
 
     public function init()
     {
@@ -45,9 +45,16 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
     {
         $model = new static;
 
-        if ('zset' === static::$type && isset($params['name'])) {
-            $model->tableName = $params['name'];
-            unset($params['name']);
+        if ('zset' === static::$type) {
+            if (is_array($params)) {
+                $model->tableName = isset($params['name']) ? (string)$params['name'] : $model->tableName;
+                unset($params['name']);
+            } else {
+                $model->tableName = (string)$params;
+                $params = null;
+            }
+        } else {
+            $model->tableName = static::tableName();
         }
 
         if ($params) {
@@ -62,6 +69,11 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
     public static function tableName()
     {
         return Inflector::camel2id(StringHelper::basename(get_called_class()), '_');
+    }
+
+    public function getTableName()
+    {
+        return $this->tableName;
     }
 
     public static function count($params = [])

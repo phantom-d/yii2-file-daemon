@@ -39,30 +39,15 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
 
     public static function one($params = [])
     {
-        if (is_string($params) || isset($params[0])) {
-            $params = [
-                'id' => is_array($params) ? array_values($params) : $params,
-            ];
-        }
-
-        $query = static::find();
-        if ($params) {
-            $query->andWhere($params);
-        }
-        return $query->one();
+        return static::findOne($params);
     }
 
-    public static function all($params = [], $limit = 10, $page = 0)
+    public static function all($params = [], $limit = 0, $page = 0)
     {
-        if (is_string($params) || isset($params[0])) {
-            $params = [
-                'id' => is_array($params) ? array_values($params) : $params,
-            ];
-        }
-
-        $query = static::find();
-        if ($params) {
-            $query->andWhere($params);
+        $query = static::findByCondition($params);
+        if ((int)$limit) {
+            $query->limit((int)$limit)
+                ->offset((int)$limit * (int)$page);
         }
         return $query->all();
     }

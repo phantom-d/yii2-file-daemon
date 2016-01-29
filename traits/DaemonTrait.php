@@ -52,12 +52,8 @@ trait DaemonTrait
      */
     public function renewConnections()
     {
-        if (false === empty($this->config['db'])) {
-            foreach ($this->config['db'] as $db) {
-                if (false === empty($this->config['db-config'][$db]['class'])) {
-                    \Yii::$app->set($db, $this->config['db-config'][$db]);
-                }
-            }
+        if ($this->component && $this->component instanceof \phantomd\filedaemon\FileProcessing) {
+            $this->component->renewConnections();
         }
     }
 

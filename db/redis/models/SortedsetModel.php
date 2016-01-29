@@ -18,18 +18,6 @@ class SortedsetModel extends ActiveModel
     /**
      * @inheritdoc
      */
-    public static function tableName()
-    {
-        if (empty(static::$tableName)) {
-            return parent::tableName();
-        }
-
-        return static::$tableName;
-    }
-
-    /**
-     * @inheritdoc
-     */
     public static function count($params = [])
     {
         if (is_array($params)) {
@@ -49,7 +37,7 @@ class SortedsetModel extends ActiveModel
             $db = static::getDb();
 
             $query  = [
-                $model->tableName(), //
+                $model->tableName, //
                 '-inf', '+inf', //
             ];
             $result = $db->executeCommand('zcount', $query);
@@ -87,10 +75,11 @@ class SortedsetModel extends ActiveModel
         $model  = static::model($params);
 
         if ($model->checkTable()) {
-            $db = static::getDb();
+            $db    = static::getDb();
+            $table = $model->tableName;
 
-            $script = "local element = redis.pcall('ZRANGEBYSCORE', '{$params['name']}', '-inf', '+inf', 'WITHSCORES', 'LIMIT' , '0' , '1')"
-                . ($params['remove'] ? " redis.pcall('ZREM', '{$params['name']}', element[1])" : '')
+            $script = "local element = redis.pcall('ZRANGEBYSCORE', '{$table}', '-inf', '+inf', 'WITHSCORES', 'LIMIT' , '0' , '1')"
+                . ($params['remove'] ? " redis.pcall('ZREM', '{$table}', element[1])" : '')
                 . " return element";
 
             $result = $db->executeCommand('eval', [$script, 0]);
@@ -135,7 +124,7 @@ class SortedsetModel extends ActiveModel
             $db = static::getDb();
 
             $query = [
-                $model->tableName(), //
+                $model->tableName, //
                 '-inf', '+inf', //
                 'WITHSCORES',
             ];
@@ -168,7 +157,7 @@ class SortedsetModel extends ActiveModel
     /**
      * Получения списка наименований задач
      *
-     * @param string $params[pattern] Regexp выборки наименований
+     * @param string $params Regexp выборки наименований
      * @return array
      */
     public static function names($params = [])
@@ -177,9 +166,13 @@ class SortedsetModel extends ActiveModel
         $names   = [];
         $cursor  = 0;
         $pattern = '*';
+        $separator = '';
 
-        if (isset($params['pattern'])) {
-            $pattern = (string)$params['pattern'];
+        if (is_array($params)) {
+            $pattern = (isset($params['pattern']) && (string)$params['pattern']) ? (string)$params['pattern'] : $pattern;
+            $separator = (isset($params['separator']) && (string)$params['separator']) ? (string)$params['separator'] : $separator;
+        } else {
+            $pattern = ('' === (string)$params) ? $pattern : (string)$params;
         }
 
         while ($result = $db->executeCommand('scan', [$cursor, 'MATCH', $pattern, 'COUNT', 10000])) {
@@ -189,6 +182,9 @@ class SortedsetModel extends ActiveModel
 
             if ($rows = $result[1]) {
                 foreach ($rows as $value) {
+                    if ($separator) {
+                        $value = explode($separator, $value);
+                    }
                     $names[] = $value;
                 }
             }
@@ -270,7 +266,7 @@ class SortedsetModel extends ActiveModel
         unset($values['score']);
 
         $query = [
-            $this->tableName(),
+            $this->tableName,
             $score,
             \yii\helpers\Json::encode($values),
         ];
@@ -298,7 +294,7 @@ class SortedsetModel extends ActiveModel
             unset($attributes['score']);
 
             $query = [
-                $this->tableName(),
+                $this->tableName,
                 \yii\helpers\Json::encode($attributes),
             ];
 
@@ -328,7 +324,7 @@ class SortedsetModel extends ActiveModel
             $db = static::getDb();
 
             $query = [
-                $this->tableName(),
+                $this->tableName($this),
                 $this->tableRename,
             ];
 
@@ -356,7 +352,7 @@ class SortedsetModel extends ActiveModel
             unset($attributes['score']);
 
             $query = [
-                $this->tableName(),
+                $this->tableName($this),
                 \yii\helpers\Json::encode($attributes),
             ];
 

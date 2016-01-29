@@ -11,8 +11,6 @@ class FileDaemonController extends \vyants\daemon\DaemonController
 
     use phantomd\filedaemon\traits\DaemonTrait;
 
-    const TABLE_ARC = 'jobsArc';
-
     /**
      * @var array Массив задач с установленным количеством потоков
      */
@@ -44,6 +42,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
     public $maxChildProcesses = 400;
 
     protected $processing = null;
+
     /**
      * @inheritdoc
      */
@@ -73,7 +72,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
         if (empty($id)) {
             return $exist;
         }
-        $job = Joblist::chooseJob($id);
+        $job = $this->component->jobsOne($id);
         if ($job && $job->pid) {
             $name = $this->getProcessName() . '_' . $job->name;
             if ($this->isProcessRunning($job->pid, $name)) {
@@ -84,45 +83,17 @@ class FileDaemonController extends \vyants\daemon\DaemonController
     }
 
     /**
-     * Отправка результатов обработки не активных задач
-     */
-    protected function transferResults()
-    {
-        $tables = \Yii::$app->images->getTables('*', $this->config['db']['result']);
-
-        if ($tables) {
-            foreach ($tables as $table) {
-                $jobId  = '';
-                $params = explode('::', $table);
-                $count  = count($params);
-
-                if (1 < $count) {
-                    $jobId = array_pop($params);
-                }
-
-                if ($job = Joblist::chooseJob($jobId)) {
-                    if ($job->status && false === $job->statusWork) {
-                        $this->doTransfer($jobId);
-                    }
-                } else {
-                    \Yii::$app->images->removeTable($table, $this->config['db']['result']);
-                }
-            }
-        }
-    }
-
-    /**
      * Принудительное завершение всех потоков
      */
     protected function doRestart()
     {
         if (is_file(\Yii::getAlias("@app/config/daemons/restart-{$this->configName}"))) {
             \Yii::info('Do restart - start!', __METHOD__ . '(' . __LINE__ . ')');
-            foreach ($this->jobListData as $jobId) {
+            foreach ($this->jobListData as $id) {
                 $keys = 0;
-                $job  = Joblist::chooseJob($jobId);
+                $job  = $this->component->jobsOne($id);
                 if ($job) {
-                    $job->status = Joblist::STATUS_RESTART;
+                    $job->status = $job::STATUS_RESTART;
                     $job->save();
                 }
             }
@@ -155,90 +126,125 @@ class FileDaemonController extends \vyants\daemon\DaemonController
 
         $return = [];
 
-        if (\Yii::$app->images->createJoblist($this->config['db']['source'])) {
+        if ($this->component->addJobs()) {
             \Yii::info('Created new jobs.', __METHOD__ . '(' . __LINE__ . ')');
         }
 
-        $this->transferResults();
-
-        $jobsQuery = Joblist::find()
-            ->where(['status' => Joblist::STATUS_WAIT])
-            ->orWhere(['status' => Joblist::STATUS_WORK])
-            ->orWhere(['status' => Joblist::STATUS_RESTART]);
+        $this->component->transferResults();
 
         $this->checkJoblist();
 
-        $threads = [];
-        $jobs    = $jobsQuery->all();
+        $jobs         = [];
+        $threads      = [];
+        $maxProcesses = (int)$this->config['child-processes'];
+        $limitCurrent = 0;
 
-        if ($jobs) {
-            foreach ($jobs as $job) {
-                $threads[explode('::', $job->name)[0]][] = $job->id;
+        if (count($this->jobListData) < $maxProcesses && $groups = $this->component->sourceGroups()) {
+            $limitProcesses = $maxProcesses - count($this->jobListData);
+            $limitTreads    = (int)$this->config['max-threads'];
+            $limit          = $limitTreads;
+
+            foreach ($groups as $group) {
+                if ($limitCurrent < $limitProcesses) {
+                    $diff = $limitProcesses - $limitCurrent;
+                    if ($diff < $limitTreads) {
+                        $limit = $diff;
+                    }
+                } else {
+                    break;
+                }
+
+                $jobsModel = $this->component->jobsModel();
+                $where     = [
+                    'group'  => $group,
+                    'status' => [
+                        $jobsModel::STATUS_WAIT,
+                        $jobsModel::STATUS_WORK,
+                        $jobsModel::STATUS_RESTART
+                    ]
+                ];
+
+                $result = $jobsModel->all($where, $limit);
+
+                if ($result) {
+                    foreach ($result as $job) {
+                        $threads[$job->group][] = $job->id;
+                    }
+
+                    $jobs = array_merge($jobs, $result);
+                    $limitCurrent += count($result);
+                }
             }
         }
 
-        \Yii::trace($this->jobListData, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '--- $this->jobListData');
 
-        if (empty($this->jobListData) || count($this->jobListData) < ((int)$this->config['max-threads'] * count($threads))) {
-            if ($jobs) {
-                foreach ($jobs as $job) {
-                    if (count($this->jobListData) >= ((int)$this->config['max-threads'] * count($threads))) {
-                        break;
+        YII_DEBUG && \Yii::trace($this->jobListData, __METHOD__ . '(' . __LINE__ . ') --- $this->jobListData');
+
+        if ($jobs) {
+            foreach ($jobs as $job) {
+                if (count($this->jobListData) >= $maxProcesses) {
+                    break;
+                }
+                $jobId    = $job->id;
+                $jobGroup = $job->group;
+
+                if ($job->statusWork && $job->complete === $job->total) {
+                    $job->status = $job::STATUS_COMPLETE;
+                    $job->save();
+                }
+
+                // Очистка контейнера со списком потоков и удаление потоков
+                if (false === $job->statusWork) {
+                    $this->doTransfer($jobId);
+                    if (false !== ($delete = array_search($jobId, $this->jobListData))) {
+                        unset($this->jobListData[$delete]);
                     }
-                    $jobId   = $job->id;
-                    $jobName = explode('::', $job->name)[0];
 
-                    if ($job->statusWork && $job->complete === $job->total) {
-                        $job->status = Joblist::STATUS_COMPLETE;
+                    if ($job::STATUS_RESTART === (int)$job->status) {
+                        $job->status = $job::STATUS_WAIT;
                         $job->save();
-
-                        $job = Joblist::chooseJob($jobId);
-                    }
-
-                    // Очистка контейнера со списком потоков и удаление потоков
-                    if (false === $job->statusWork) {
-                        $this->doTransfer($jobId);
-                        if (false !== ($delete = array_search($jobId, $this->jobListData))) {
-                            unset($this->jobListData[$delete]);
+                    } else {
+                        if (false !== ($delete = array_search($jobId, $threads[$jobGroup]))) {
+                            unset($threads[$jobGroup][$delete]);
                         }
+                        continue;
+                    }
+                }
 
-                        if (Joblist::STATUS_RESTART === (int)$job->status) {
-                            $job->status = Joblist::STATUS_WAIT;
-                            $job->save();
+                $countJobs = 0;
 
-                            $job = Joblist::chooseJob($jobId);
+                if (false === empty($threads[$jobGroup])) {
+                    foreach ($threads[$jobGroup] as $value) {
+                        if (in_array($value, $this->jobListData)) {
+                            ++$countJobs;
+                        }
+                    }
+                }
+
+                // Добавление задач в контейнер потоков
+                if ($countJobs < (int)$this->config['max-threads']) {
+                    if ($this->checkJob($jobId)) {
+                        if (false === in_array($jobId, $this->jobListData)) {
+                            $this->jobListData[] = $jobId;
+                        }
+                    } else {
+                        $return[] = $jobId;
+                        if (in_array($jobId, $this->jobListData)) {
+                            $this->component->transfer($jobId);
                         } else {
-                            if (false !== ($delete = array_search($jobId, $threads[$jobName]))) {
-                                unset($threads[$jobName][$delete]);
-                            }
-                            continue;
+                            $this->jobListData[] = $jobId;
                         }
                     }
+                }
+            }
+        }
 
-                    $countJobs = 0;
-
-                    if (false === empty($threads[$jobName])) {
-                        foreach ($threads[$jobName] as $value) {
-                            if (in_array($value, $this->jobListData)) {
-                                ++$countJobs;
-                            }
-                        }
-                    }
-
-                    // Добавление задач в контейнер потоков
-                    if ($countJobs < (int)$this->config['max-threads']) {
-                        if ($this->checkJob($jobId)) {
-                            if (false === in_array($jobId, $this->jobListData)) {
-                                $this->jobListData[] = $jobId;
-                            }
-                        } else {
-                            $return[] = $jobId;
-                            if (in_array($jobId, $this->jobListData)) {
-                                $this->doTransfer($jobId);
-                            } else {
-                                $this->jobListData[] = $jobId;
-                            }
-                        }
+        if (empty($this->jobListData)) {
+            $files = FileHelper::findFiles(\Yii::getAlias('@app/temp/'), ['except' => ['\.gitignore']]);
+            if ($files) {
+                foreach ($files as $file) {
+                    if (false === is_dir($file) && 0 === (int)filesize($file)) {
+                        unlink($file);
                     }
                 }
             }
@@ -250,13 +256,13 @@ class FileDaemonController extends \vyants\daemon\DaemonController
     }
 
     /**
-     * Обработка поставленной задачи с ведением статуса выполнения в RedisDB
+     * Обработка поставленной задачи с ведением статуса выполнения
      *
-     * @param string $jobId ID задачи в RedisDB
+     * @param string $jobId ID задачи
      */
     protected function doJob($jobId)
     {
-        $job = Joblist::chooseJob($jobId);
+        $job = $this->component->jobsOne($jobId);
 
         if ($job && $job->statusWork) {
             $job->pid = getmypid();
@@ -267,41 +273,37 @@ class FileDaemonController extends \vyants\daemon\DaemonController
 
             \Yii::info('Do job - start("' . $jobId . '")! PID: ' . $job->pid, __METHOD__ . '(' . __LINE__ . ')');
 
-            $job->status = Joblist::STATUS_WORK;
+            $job->status = $job::STATUS_WORK;
             $job->save();
-
-            $job = Joblist::chooseJob($jobId);
-
-            if (empty($job)) {
-                return true;
-            }
 
             $doJob = $job->complete < $job->total;
 
             while ($doJob) {
                 $doJob = $this->doThread($job);
 
-                $job = Joblist::chooseJob($jobId);
-
-                \Yii::trace(($job ? $job->toArray() : $job), __METHOD__ . '(' . __LINE__ . ')');
+                YII_DEBUG && \Yii::trace(($job ? $job->toArray() : $job), __METHOD__ . '(' . __LINE__ . ')');
 
                 $doJob = $doJob && $job && $job->statusWork;
+
+                if (false === $doJob || $job->complete === $job->total) {
+                    $params = [
+                        'time_end' => microtime(true),
+                    ];
+
+                    if ($job->complete === $job->total) {
+                        $params['status'] = $job::STATUS_COMPLETE;
+                    }
+
+                    $job->setAttributes($params);
+                    $job->save();
+
+                    $doJob = false;
+                } else {
+                    $doJob = true;
+                }
             }
 
-            $params = [
-                'time_end' => time(),
-            ];
-
-            if ($job->complete === $job->total) {
-                $params['status'] = Joblist::STATUS_COMPLETE;
-            }
-
-            $job = Joblist::chooseJob($jobId);
-
-            $job->setAttributes($params);
-            $job->save();
-
-            $this->doTransfer($jobId);
+            $this->component->transfer($jobId);
         }
 
         \Yii::info('Do job - end ("' . $jobId . '")! PID: ' . $job->pid, __METHOD__ . '(' . __LINE__ . ')');
@@ -327,22 +329,17 @@ class FileDaemonController extends \vyants\daemon\DaemonController
         $jobComplete = $job->complete;
 
         $startItem   = microtime(true);
-        $sourceTotal = (int)\Yii::$app->images->getCount($job->name, $this->config['db']['source']);
+        $sourceTotal = $this->component->sourceCount($job->name);
 
         if ($sourceTotal > $jobTotal) {
             $jobTotal = $sourceTotal;
         }
 
-        // * Start convert an image.
-        $item = \Yii::$app->images->getSource(
-            $job->name, //
-            $this->config['db']['source']
-        );
+        // * Start file processing
+        if ($item = $this->component->sourceOne($job->name)) {
+            YII_DEBUG && \Yii::trace($item, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '$item');
 
-        \Yii::trace($item, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '$item');
-
-        if (is_array($item)) {
-            if (false === $this->doFile($item, explode('::', $job->name)[0] . '::' . $jobId)) {
+            if (false === $this->doFile($item, $job->group . '::' . $jobId)) {
                 ++$jobErrors;
             }
             ++$jobComplete;
@@ -358,25 +355,21 @@ class FileDaemonController extends \vyants\daemon\DaemonController
                 'time_per_item' => $jobTimePerItem,
                 'time_to_left'  => ($jobTotal - $jobComplete) * $jobTimePerItem,
             ]);
-
             $job->save();
-            $job = Joblist::chooseJob($jobId);
         }
-        // * End convert an image.
+        // * End file processing
 
         if (true === $item) {
             if ($jobComplete > $jobTotal) {
                 $job->complete = $jobTotal;
                 $job->errors   = $jobErrors + ($jobTotal - $jobComplete);
             }
-            $job->status = Joblist::STATUS_COMPLETE;
-
+            $job->status = $job::STATUS_COMPLETE;
             $job->save();
-            $job = Joblist::chooseJob($jobId);
         }
 
         $return = $jobComplete < $jobTotal // Количество обработанных записей задачи
-            && Joblist::STATUS_WORK === (int)$job->status; // Статус задачи
+            && $job::STATUS_WORK === (int)$job->status; // Статус задачи
 
         if (empty($job) || false === $job->statusWork) {
             $return = false;
@@ -389,13 +382,13 @@ class FileDaemonController extends \vyants\daemon\DaemonController
      * Обработка одной строки данных
      *
      * @param mixed $item Данные для обработки
-     * @param string $table Наименование ключа в RedisDB для записи положительного результата
+     * @param string $table Наименование для записи результатов
      * @return bool
      */
     protected function doFile($item, $table)
     {
         \Yii::info('Do file - start!', __METHOD__ . '(' . __LINE__ . ')');
-        \Yii::trace($item, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '$item');
+        YII_DEBUG && \Yii::trace($item, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '$item');
 
         $return = false;
 
@@ -405,32 +398,29 @@ class FileDaemonController extends \vyants\daemon\DaemonController
             return $return;
         }
 
-        if ($file = \Yii::$app->images->getFileName($item['item']['url'])) {
+        if ($file = $this->component->getFileName($item->url)) {
 
-            \Yii::trace($file, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '$file');
+            YII_DEBUG && \Yii::trace($file, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '$file');
 
-            $type    = $this->config['type'];
-            $command = $this->commands[(int)$item['item']['command']];
+            $command = $this->commands[(int)$item->command];
 
-            $fileName = md5($item['item']['object_id'] . $file['file']);
-            $tmpName  = tempnam($this->config['directories']['source'], $type);
+            $fileName = md5($item->object_id . $file['file']);
+            $tmpName  = tempnam($this->config['directories']['source']);
 
-            $path = \Yii::$app->images->getArcResult(self::TABLE_ARC, $fileName);
+            $path = $this->component->arcresultOne($fileName);
 
-            \Yii::trace($path, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '$path');
+            YII_DEBUG && \Yii::trace($path, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '$path');
 
             $this->itemData = [
                 'table'         => $table,
-                'table_arc'     => self::TABLE_ARC,
                 'source'        => $tmpName,
                 'source_delete' => true,
                 'file'          => $fileName,
                 'url'           => $file['url'],
-                'type'          => $type,
-                'command'       => (int)$item['item']['command'],
-                'image_id'      => $item['item']['image_id'],
-                'object_id'     => $item['item']['object_id'],
-                'score'         => $item['score'],
+                'command'       => (int)$item->command,
+                'image_id'      => $item->image_id,
+                'object_id'     => $item->object_id,
+                'score'         => $item->score,
                 'directories'   => $this->config['directories'],
                 'extension'     => $this->config['extension'],
                 'quality'       => (int)$this->config['quality'],
@@ -438,13 +428,13 @@ class FileDaemonController extends \vyants\daemon\DaemonController
             ];
 
             if (empty($path)) {
-                $getFile = \Yii::$app->images->getFile($file['url'], $tmpName, $type);
-                \Yii::trace($getFile, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '$getFile');
+                $getFile = $this->component->getFile($file['url'], $tmpName);
+                YII_DEBUG && \Yii::trace($getFile, __METHOD__ . '(' . __LINE__ . ') $getFile');
             }
 
             $method = __FUNCTION__ . \yii\helpers\Inflector::id2camel($command);
 
-            \Yii::trace($this->itemData, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '$this->itemData');
+            YII_DEBUG && \Yii::trace($this->itemData, __METHOD__ . '(' . __LINE__ . ') $this->itemData');
 
             if (method_exists($this, $method)) {
                 \Yii::info("Do file `{$command}` - start!", __METHOD__ . '(' . __LINE__ . ')' . "\n");
@@ -462,7 +452,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
     /**
      * Добавление/удаление параметров изображений в список
      */
-    protected function doMerge()
+    public function doMerge()
     {
         \Yii::info('Do merge - start!', __METHOD__ . '(' . __LINE__ . ')');
         $command = false;
@@ -499,9 +489,6 @@ class FileDaemonController extends \vyants\daemon\DaemonController
             }
         }
 
-        if (isset($this->config['commands'][$command]['type'])) {
-            $this->itemData['type'] = $this->config['commands'][$command]['type'];
-        }
         \Yii::info('Do merge - end!', __METHOD__ . '(' . __LINE__ . ')');
     }
 
@@ -520,24 +507,30 @@ class FileDaemonController extends \vyants\daemon\DaemonController
         // Контроль наличия файла в архивной базе
         if (false === empty($path)) {
             $filePath = FileHelper::normalizePath($this->itemData['directories']['target'] . $path);
-            \Yii::trace('$filePath: ' . var_export($filePath, true), __METHOD__ . '(' . __LINE__ . ')');
+
+            YII_DEBUG && \Yii::trace('$filePath: ' . var_export($filePath, true), __METHOD__ . '(' . __LINE__ . ')');
             if (false === empty($this->itemData['targets'])) {
                 $make = false;
                 foreach ($this->itemData['targets'] as $target) {
                     $file = $filePath . $target['suffix'] . '.' . $this->itemData['extension'];
-                    \Yii::trace('is_file(' . $file . '): ' . var_export(is_file($file), true), __METHOD__ . '(' . __LINE__ . ')');
+                    YII_DEBUG && \Yii::trace('is_file(' . $file . '): ' . var_export(is_file($file), true), __METHOD__ . '(' . __LINE__ . ')');
                     if (false === is_file($file)) {
                         $make = true;
                     }
                 }
+
                 if ($make) {
                     foreach ($this->itemData['targets'] as $target) {
                         $file = $filePath . $target['suffix'] . '.' . $this->itemData['extension'];
                         is_file($file) && unlink($file);
                     }
-                    \Yii::$app->images->removeTable($this->itemData['table_arc'], $this->config['db']['arc'], $this->itemData['file']);
-                    $make = \Yii::$app->images->getFile($this->itemData['url'], $this->itemData['source'], $this->itemData['type']);
-                    \Yii::trace('$make: ' . var_export($make, true), __METHOD__ . '(' . __LINE__ . ')');
+
+                    if ($arcResult = $this->component->arcresultOne($this->itemData['file'])) {
+                        $arcResult->delete();
+                    }
+
+                    $make = $this->component->getFile($this->itemData['url'], $this->itemData['source']);
+                    YII_DEBUG && \Yii::trace('$make: ' . var_export($make, true), __METHOD__ . '(' . __LINE__ . ')');
                 } else {
                     $return  = true;
                     $timeDir = dirname($path);
@@ -560,7 +553,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
                 return $return;
             }
 
-            if (\Yii::$app->images->convertImage($this->itemData)) {
+            if ($this->component->makeFile($this->itemData)) {
                 $return = true;
             }
         }
@@ -568,90 +561,30 @@ class FileDaemonController extends \vyants\daemon\DaemonController
         // Запись результатов в RedisDB
         if ($return) {
             $itemDst = [
-                'item'  => [
-                    'command'   => $this->itemData['command'],
-                    'file_name' => $this->itemData['file'],
-                    'image_id'  => $this->itemData['image_id'],
-                    'object_id' => $this->itemData['object_id'],
-                    'time_dir'  => $timeDir,
-                ],
-                'score' => $this->itemData['score'],
+                'name'      => $this->itemData['table'],
+                'command'   => $this->itemData['command'],
+                'file_name' => $this->itemData['file'],
+                'image_id'  => $this->itemData['image_id'],
+                'object_id' => $this->itemData['object_id'],
+                'time_dir'  => $timeDir,
+                'score'     => $this->itemData['score'],
             ];
 
-            \Yii::trace('$itemDst: ' . var_export($itemDst, true), __METHOD__ . '(' . __LINE__ . ')');
+            YII_DEBUG && \Yii::trace('$itemDst: ' . var_export($itemDst, true), __METHOD__ . '(' . __LINE__ . ')');
 
-            $dbArc = $make ? $this->config['db']['arc'] : null;
+            $resultModel = $this->component->resultModel($itemDst);
+            if ($resultModel->save() && $make) {
+                $data = [
+                    'name' => $itemDst['file_name'],
+                    'path' => $itemDst['time_dir'] . DIRECTORY_SEPARATOR . $itemDst['file_name'],
+                ];
 
-            \Yii::$app->images->setResult(
-                $this->itemData['table'], //
-                $itemDst, //
-                $this->config['db']['result'], //
-                $dbArc, $this->itemData['table_arc']
-            );
+                $arcresultModel = $this->component->arcresultModel($data);
+                $arcresultModel->save();
+            }
         }
 
         \Yii::info('Make file - end!', __METHOD__ . '(' . __LINE__ . ')');
-        return $return;
-    }
-
-    /**
-     * Отправка результатов обработки задач
-     *
-     * @param string $jobId ID задачи
-     * @return boolean
-     */
-    protected function doTransfer($jobId)
-    {
-        \Yii::info('Do transfer - start!', __METHOD__ . '(' . __LINE__ . ')');
-        $return = false;
-        if (false === empty($jobId)) {
-            $job   = Joblist::chooseJob($jobId);
-            $table = explode('::', $job->name)[0] . '::' . $jobId;
-            if ($job) {
-                $resultTotal = (int)\Yii::$app->images->getCount($table, $this->config['db']['result']);
-                $page        = 0;
-
-                while ($result = \Yii::$app->images->getResult($table, $this->config['db']['result'], 100, $page++)) {
-                    if (true === $result) {
-                        $return = true;
-                        break;
-                    }
-                    $data = [];
-                    foreach ($result as $value) {
-                        $data[] = [
-                            'command'   => $value['command'],
-                            'object_id' => $value['object_id'],
-                            'url'       => $value['time_dir'] . DIRECTORY_SEPARATOR . $value['file_name'],
-                            'image_id'  => $value['image_id'],
-                        ];
-                    }
-
-                    if ($data) {
-                        $curl = new \phantomd\filedaemon\components\Curl();
-                        $curl->setOption(CURLOPT_POSTFIELDS, http_build_query(['data' => $data]));
-                        if ($curl->post($job->callback)) {
-                            \Yii::info("Send data successful!\n\tTable: {$table}, total: {$resultTotal}, sended: " . count($data) . ", page: {$page}", __METHOD__ . '(' . __LINE__ . ')');
-                            $return = true;
-                        } else {
-                            $message = "Send data to callback was error!"
-                                . "\nresponse: " . var_export($curl->response, true)
-                                . "\responseCode: " . var_export($curl->code, true)
-                                . "\nresponseError: " . var_export($curl->error, true)
-                                . "\nresponseInfo: " . var_export($curl->info, true);
-                            \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
-                        }
-                    }
-                }
-            }
-        } else {
-            $args = func_get_args();
-            \Yii::error("Incorrect params!<br>\n" . var_export($args), __METHOD__ . '(' . __LINE__ . ')');
-        }
-        if ($return) {
-            \Yii::info('Delete table: ' . $table, __METHOD__ . '(' . __LINE__ . ')');
-            \Yii::$app->images->removeTable($table, $this->config['db']['result']);
-        }
-        \Yii::info('Do transfer - end!', __METHOD__ . '(' . __LINE__ . ')');
         return $return;
     }
 

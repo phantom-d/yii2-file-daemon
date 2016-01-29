@@ -25,11 +25,11 @@ class HashModel extends ActiveModel
 
         if (is_array($params)) {
             $params = [
-                'name' => isset($params['name']) ? (string)$params['name'] : $model->tableName(),
+                'name' => isset($params['name']) ? (string)$params['name'] : $model->tableName,
             ];
         } else {
             $params = [
-                'name' => $params ? (string)$params : $model->tableName(),
+                'name' => $params ? (string)$params : $model->tableName,
             ];
         }
 
@@ -61,7 +61,7 @@ class HashModel extends ActiveModel
 
         if ($model->checkTable()) {
             $db    = static::getDb();
-            $table = $model->tableName();
+            $table = $model->tableName;
 
             $attributes = null;
 
@@ -118,7 +118,7 @@ class HashModel extends ActiveModel
 
         if ($model->checkTable()) {
             $db    = static::getDb();
-            $table = $this->tableName();
+            $table = $this->tableName;
             $query = [$table];
 
             if (empty($params)) {
@@ -197,7 +197,7 @@ class HashModel extends ActiveModel
         $db     = static::getDb();
         $values = $this->getAttributes();
 
-        $query  = [$this->tableName()];
+        $query  = [$this->tableName];
         $result = $this->attributes();
 
         $key = 0;
@@ -241,7 +241,7 @@ class HashModel extends ActiveModel
             $attributes = $this->getOldAttributes();
 
             $query = [
-                $this->tableName(),
+                $this->tableName,
                 $attributes['name'],
             ];
 
