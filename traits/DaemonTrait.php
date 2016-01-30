@@ -15,9 +15,13 @@ trait DaemonTrait
 
     protected $processing = null;
 
+    protected $component = null;
+
     public function init()
     {
         parent::init();
+
+        $this->configName = empty(static::$configAlias) ? '' : static::$configAlias;
 
         $this->getConfig();
 
@@ -29,15 +33,7 @@ trait DaemonTrait
             }
         }
 
-        $type = 'File';
-
-        if (false === empty($this->component)) {
-            $type = ucfirst(strtolower($this->component));
-        }
-
-        $component = 'phantomd\\filedaemon\\' . $type . 'Processing';
-
-        $this->processing = new $component(['config' => $this->config]);
+        $this->component = \phantomd\filedaemon\Component::init($this->config);
     }
 
     /**
@@ -56,12 +52,8 @@ trait DaemonTrait
      */
     public function renewConnections()
     {
-        if (false === empty($this->config['db'])) {
-            foreach ($this->config['db'] as $db) {
-                if (false === empty($this->config['db-config'][$db]['class'])) {
-                    \Yii::$app->set($db, $this->config['db-config'][$db]);
-                }
-            }
+        if ($this->component && $this->component instanceof \phantomd\filedaemon\FileProcessing) {
+            $this->component->renewConnections();
         }
     }
 

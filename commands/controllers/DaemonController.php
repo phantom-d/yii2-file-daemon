@@ -16,11 +16,11 @@ abstract class DaemonController extends Controller
 
     const EVENT_BEFORE_JOB = "EVENT_BEFORE_JOB";
 
-    const EVENT_AFTER_JOB  = "EVENT_AFTER_JOB";
+    const EVENT_AFTER_JOB = "EVENT_AFTER_JOB";
 
     const EVENT_BEFORE_ITERATION = "event_before_iteration";
 
-    const EVENT_AFTER_ITERATION  = "event_after_iteration";
+    const EVENT_AFTER_ITERATION = "event_after_iteration";
 
     /**
      * @var $demonize boolean Run controller as Daemon
@@ -113,8 +113,8 @@ abstract class DaemonController extends Controller
             'logFile' => $logFileName,
             'logVars' => [],
             'prefix'  => function() {
-            return '';
-        },
+                return '';
+            },
             'exportInterval' => 1,
             'enableRotation' => false,
             'except'         => [
@@ -127,7 +127,7 @@ abstract class DaemonController extends Controller
             $config['levels'][] = 'profile';
         }
 
-        $targets['daemon'] = new \yii\log\FileTarget($config);
+        $targets['daemon'] = new \phantomd\filedaemon\components\FileTarget($config);
 
         \Yii::$app->getLog()->targets = $targets;
         \Yii::$app->getLog()->init();

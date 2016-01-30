@@ -7,13 +7,47 @@ use yii\base\InvalidParamException;
 
 /**
  * SortedsetModel
- * 
+ *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class SortedsetModel extends ActiveModel
 {
 
-    private $type = 'zset';
+    protected static $type = 'zset';
+
+    /**
+     * @inheritdoc
+     */
+    public static function count($params = [])
+    {
+        if (is_array($params)) {
+            $params = [
+                'name' => isset($params['name']) ? (string)$params['name'] : '',
+            ];
+        } else {
+            $params = [
+                'name' => (string)$params,
+            ];
+        }
+
+        $return = null;
+        $model  = static::model($params);
+
+        if ($model->checkTable()) {
+            $db = static::getDb();
+
+            $query  = [
+                $model->tableName, //
+                '-inf', '+inf', //
+            ];
+            $result = $db->executeCommand('zcount', $query);
+            if (false === is_null($result)) {
+                $return = (int)$result;
+            }
+        }
+
+        return $return;
+    }
 
     /**
      * Получение одной записи
@@ -23,115 +57,312 @@ class SortedsetModel extends ActiveModel
      * @return mixed
      * @throws InvalidParamException
      */
-    public static function getOne($params = [])
+    public static function one($params = [], $remove = false)
     {
-        $params = [
-            'source_id' => isset($params['source_id']) ? (string)$params['source_id'] : '',
-            'remove'    => isset($params['remove']) ? (bool)$params['remove'] : false,
-        ];
-
-        if ('' === $params['source_id']) {
-            throw new InvalidParamException(Yii::t('app', "Parameter 'source_id' cannot be blank."));
-        }
-
-        $model = new static;
-        $db    = $model->getDb();
-
-        if (false === $db->exists($params['source_id'])) {
-            Yii::error(Yii::t('app', "source_id not exists: {source_id}!", $params), __METHOD__ . '(' . __LINE__ . ')');
-            return false;
-        }
-
-        if ($model->type !== $db->type($params['source_id'])) {
-            Yii::error(Yii::t('app', "Incorrect type of source_id '{source_id}'! Must be sorted sets!", $params), __METHOD__ . '(' . __LINE__ . ')');
-            return false;
-        }
-
-        $script = "local element = redis.pcall('ZRANGEBYSCORE', '{$params['source_id']}', '-inf', '+inf', 'WITHSCORES', 'LIMIT' , '0' , '1')"
-            . ($params['remove'] ? " redis.pcall('ZREM', '{$params['source_id']}', element[1])" : '')
-            . " return element";
-
-        $result = $db->eval($script, 0);
-        if ($result) {
-            $model->setAttributes(array_merge(json_decode($result[0], true), ['score' => $result[1]]));
-            $model->setIsNewRecord(false);
+        if (is_array($params)) {
+            $params = [
+                'name' => isset($params['name']) ? (string)$params['name'] : '',
+            ];
         } else {
-            $model = null;
+            $params = [
+                'name' => (string)$params,
+            ];
         }
 
-        if (false === $model->afterFind(true)) {
-            return false;
+        $params['remove'] = (bool)$remove;
+
+        $return = null;
+        $model  = static::model($params);
+
+        if ($model->checkTable()) {
+            $db    = static::getDb();
+            $table = $model->tableName;
+
+            $script = "local element = redis.pcall('ZRANGEBYSCORE', '{$table}', '-inf', '+inf', 'WITHSCORES', 'LIMIT' , '0' , '1')"
+                . ($params['remove'] ? " redis.pcall('ZREM', '{$table}', element[1])" : '')
+                . " return element";
+
+            $result = $db->executeCommand('eval', [$script, 0]);
+            if ($result) {
+                $attributes = array_merge(json_decode($result[0], true), ['score' => $result[1]]);
+
+                $model->setAttributes($attributes);
+                $model->setIsNewRecord(false);
+                $model->afterFind();
+                $return = $model;
+            }
         }
 
-        return $model;
+        return $return;
     }
 
     /**
      * Получение списка записей
-     * 
-     * @param string $params[source_id] Наименование ключа в RedisDB
-     * @param integer $params[limit] Количество.
-     * @param integer $params[page] Номер страницы.
+     *
+     * @param string $params['name'] Наименование ключа в RedisDB
+     * @param integer $params['limit'] Количество.
+     * @param integer $params['page'] Номер страницы.
      * @throws InvalidParamException
      * @return mixed
      */
-    public static function getAll($params = [])
+    public static function all($params = [], $limit = 10, $page = 0)
     {
-        $params = [
-            'source_id' => isset($params['source_id']) ? (string)$params['source_id'] : '',
-            'limit'     => isset($params['limit']) ? (int)$params['limit'] : 0,
-            'page'      => isset($params['page']) ? (int)$params['page'] : 0,
-        ];
+        if (is_array($params)) {
+            $params = [
+                'name' => isset($params['name']) ? (string)$params['name'] : '',
+            ];
+        } else {
+            $params = [
+                'name' => (string)$params,
+            ];
+        }
 
         $return = [];
+        $model  = static::model($params);
 
-        if ('' === $params['source_id']) {
-            throw new InvalidParamException(Yii::t('app', "Parameter 'source_id' cannot be blank."));
-        }
+        if ($model->checkTable()) {
+            $db = static::getDb();
 
-        $model = new static;
-        $db    = $model->getDb();
+            $query = [
+                $model->tableName, //
+                '-inf', '+inf', //
+                'WITHSCORES',
+            ];
 
-        if (false === $db->exists($params['table'])) {
-            Yii::error(Yii::t('app', "source_id not exists: {source_id}!", $params), __METHOD__ . '(' . __LINE__ . ')');
-            return false;
-        }
+            if ((int)$limit) {
+                $query[] = 'LIMIT';
+                $query[] = (int)$limit * (int)$page;
+                $query[] = $limit;
+            }
 
-        if ($model->type !== $db->type($params['source_id'])) {
-            Yii::error(Yii::t('app', "Incorrect type of source_id '{source_id}'! Must be sorted sets!", $params), __METHOD__ . '(' . __LINE__ . ')');
-            return false;
-        }
+            $result = $db->executeCommand('zrangebyscore', $query);
 
-        $query = [
-            $params['source_id'], //
-            '-inf', '+inf', //
-            'WITHSCORES',
-        ];
+            if ($result) {
+                $key = 0;
+                while (isset($result[$key])) {
+                    $attributes = array_merge(json_decode($result[$key++], true), ['score' => $result[$key++]]);
 
-        if ($params['limit']) {
-            $query[] = 'LIMIT';
-            $query[] = $params['limit'] * $params['page'];
-            $query[] = $params['limit'];
-        }
-
-        $result = $db->executeCommand('zrangebyscore', $query);
-
-        if ($result) {
-            $key = 0;
-            while (isset($result[$key])) {
-                $row = clone $model;
-                $row->setAttributes(array_merge(json_decode($result[$key++], true), ['score' => $result[$key++]]));
-                $row->setIsNewRecord(false);
-
-                $return[] = $row;
+                    $row      = clone $model;
+                    $row->setAttributes($attributes);
+                    $row->setIsNewRecord(false);
+                    $row->afterFind();
+                    $return[] = $row;
+                }
             }
         }
 
-        if (false === $model->afterFind(true)) {
+        return $return;
+    }
+
+    /**
+     * Получения списка наименований задач
+     *
+     * @param string $params Regexp выборки наименований
+     * @return array
+     */
+    public static function names($params = [])
+    {
+        $db      = static::getDb();
+        $names   = [];
+        $cursor  = 0;
+        $pattern = '*';
+        $separator = '';
+
+        if (is_array($params)) {
+            $pattern = (isset($params['pattern']) && (string)$params['pattern']) ? (string)$params['pattern'] : $pattern;
+            $separator = (isset($params['separator']) && (string)$params['separator']) ? (string)$params['separator'] : $separator;
+        } else {
+            $pattern = ('' === (string)$params) ? $pattern : (string)$params;
+        }
+
+        while ($result = $db->executeCommand('scan', [$cursor, 'MATCH', $pattern, 'COUNT', 10000])) {
+            if ($cursor !== (int)$result[0]) {
+                $cursor = (int)$result[0];
+            }
+
+            if ($rows = $result[1]) {
+                foreach ($rows as $value) {
+                    if ($separator) {
+                        $value = explode($separator, $value);
+                    }
+                    $names[] = $value;
+                }
+            }
+
+            if (0 === $cursor) {
+                break;
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * Получение списка наименований групп задач
+     *
+     * @param string $params[pattern] Regexp выборки наименований
+     * @return array
+     */
+    public static function groups($params = [])
+    {
+        $groups = [];
+
+        if ($result = static::names($params)) {
+            foreach ($result as $value) {
+                $groups[explode('::', $value)[0]] = '';
+            }
+        }
+
+        return array_keys($groups);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function save($runValidation = true, $attributeNames = NULL)
+    {
+        if ($this->getIsNewRecord()) {
+            return $this->insert($runValidation, $attributeNames);
+        } else {
+            return $this->update($runValidation, $attributeNames) !== false;
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function update($runValidation = true, $attributeNames = NULL)
+    {
+        if ($this->getDirtyAttributes($attributeNames)) {
+            $model  = clone $this;
+            if ($return = $this->insert($runValidation, $attributeNames)) {
+                $model->delete();
+            }
+        }
+        return $return;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function insert($runValidation = true, $attributeNames = null)
+    {
+        if ($runValidation && !$this->validate($attributeNames)) {
+            return false;
+        }
+        if (!$this->beforeSave(true)) {
             return false;
         }
 
-        return $return;
+        $changedAttributes = $this->getDirtyAttributes($attributeNames);
+        if (empty($changedAttributes)) {
+            $this->afterSave(false, $changedAttributes);
+            return 0;
+        }
+
+        $db     = static::getDb();
+        $values = $this->getAttributes();
+        $score  = $values['score'];
+        unset($values['score']);
+
+        $query = [
+            $this->tableName,
+            $score,
+            \yii\helpers\Json::encode($values),
+        ];
+        // save pk in a findall pool
+        $db->executeCommand('zadd', $query);
+
+        $values['score'] = $score;
+
+        $this->setOldAttributes($values);
+        $this->afterSave(true, $changedAttributes);
+
+        return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function delete()
+    {
+        $result = false;
+        if ($this->beforeDelete()) {
+            $db = static::getDb();
+
+            $attributes = $this->getOldAttributes();
+            unset($attributes['score']);
+
+            $query = [
+                $this->tableName,
+                \yii\helpers\Json::encode($attributes),
+            ];
+
+            $result = $db->executeCommand('zrem', $query);
+
+            $this->setOldAttributes(null);
+            $this->afterDelete();
+        }
+
+        return $result;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function rename($params = [])
+    {
+        $result = false;
+
+        if (empty($params) || is_array($params)) {
+            return $result;
+        }
+
+        $this->tableRename = (string)$params;
+
+        if ($this->beforeRename()) {
+            $db = static::getDb();
+
+            $query = [
+                $this->tableName($this),
+                $this->tableRename,
+            ];
+
+            if ($result = (bool)$db->executeCommand('renamenx', $query)) {
+                $this->tableName = $this->tableRename;
+            }
+
+            $this->tableRename = null;
+            $this->afterRename();
+        }
+
+        return $result;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function remove()
+    {
+        $result = false;
+        if ($this->beforeRemove()) {
+            $db = static::getDb();
+
+            $attributes = $this->getOldAttributes();
+            unset($attributes['score']);
+
+            $query = [
+                $this->tableName($this),
+                \yii\helpers\Json::encode($attributes),
+            ];
+
+            $result = (bool)$db->executeCommand('del', $query);
+
+            $this->setOldAttributes(null);
+            $this->afterRemove();
+        }
+
+        return $result;
     }
 
 }

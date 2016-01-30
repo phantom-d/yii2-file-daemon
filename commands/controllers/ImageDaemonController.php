@@ -640,9 +640,9 @@ class ImageDaemonController extends FileDaemonController
                         } else {
                             $message = "Send data to callback was error!"
                                 . "\nresponse: " . var_export($curl->response, true)
-                                . "\responseCode: " . var_export($curl->responseCode, true)
-                                . "\nresponseError: " . var_export($curl->responseError, true)
-                                . "\nresponseInfo: " . var_export($curl->responseInfo, true);
+                                . "\responseCode: " . var_export($curl->code, true)
+                                . "\nresponseError: " . var_export($curl->error, true)
+                                . "\nresponseInfo: " . var_export($curl->info, true);
                             \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
                         }
                     }
