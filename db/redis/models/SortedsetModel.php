@@ -20,16 +20,6 @@ class SortedsetModel extends ActiveModel
      */
     public static function count($params = [])
     {
-        if (is_array($params)) {
-            $params = [
-                'name' => isset($params['name']) ? (string)$params['name'] : '',
-            ];
-        } else {
-            $params = [
-                'name' => (string)$params,
-            ];
-        }
-
         $return = null;
         $model  = static::model($params);
 
@@ -59,18 +49,6 @@ class SortedsetModel extends ActiveModel
      */
     public static function one($params = [], $remove = false)
     {
-        if (is_array($params)) {
-            $params = [
-                'name' => isset($params['name']) ? (string)$params['name'] : '',
-            ];
-        } else {
-            $params = [
-                'name' => (string)$params,
-            ];
-        }
-
-        $params['remove'] = (bool)$remove;
-
         $return = null;
         $model  = static::model($params);
 
@@ -79,7 +57,7 @@ class SortedsetModel extends ActiveModel
             $table = $model->tableName;
 
             $script = "local element = redis.pcall('ZRANGEBYSCORE', '{$table}', '-inf', '+inf', 'WITHSCORES', 'LIMIT' , '0' , '1')"
-                . ($params['remove'] ? " redis.pcall('ZREM', '{$table}', element[1])" : '')
+                . ((bool)$remove ? " redis.pcall('ZREM', '{$table}', element[1])" : '')
                 . " return element";
 
             $result = $db->executeCommand('eval', [$script, 0]);
@@ -107,16 +85,6 @@ class SortedsetModel extends ActiveModel
      */
     public static function all($params = [], $limit = 10, $page = 0)
     {
-        if (is_array($params)) {
-            $params = [
-                'name' => isset($params['name']) ? (string)$params['name'] : '',
-            ];
-        } else {
-            $params = [
-                'name' => (string)$params,
-            ];
-        }
-
         $return = [];
         $model  = static::model($params);
 
@@ -142,10 +110,11 @@ class SortedsetModel extends ActiveModel
                 while (isset($result[$key])) {
                     $attributes = array_merge(json_decode($result[$key++], true), ['score' => $result[$key++]]);
 
-                    $row      = clone $model;
+                    $row = clone $model;
                     $row->setAttributes($attributes);
                     $row->setIsNewRecord(false);
                     $row->afterFind();
+
                     $return[] = $row;
                 }
             }
@@ -162,14 +131,14 @@ class SortedsetModel extends ActiveModel
      */
     public static function names($params = [])
     {
-        $db      = static::getDb();
-        $names   = [];
-        $cursor  = 0;
-        $pattern = '*';
+        $db        = static::getDb();
+        $names     = [];
+        $cursor    = 0;
+        $pattern   = '*';
         $separator = '';
 
         if (is_array($params)) {
-            $pattern = (isset($params['pattern']) && (string)$params['pattern']) ? (string)$params['pattern'] : $pattern;
+            $pattern   = (isset($params['pattern']) && (string)$params['pattern']) ? (string)$params['pattern'] : $pattern;
             $separator = (isset($params['separator']) && (string)$params['separator']) ? (string)$params['separator'] : $separator;
         } else {
             $pattern = ('' === (string)$params) ? $pattern : (string)$params;

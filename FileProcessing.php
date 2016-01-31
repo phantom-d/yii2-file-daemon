@@ -3,7 +3,7 @@
 namespace phantomd\filedaemon;
 
 use yii\base\ErrorException;
-use phantomd\filedaemon\db\redis\models\Jobs;
+use yii\httpclient\Client;
 
 /**
  * Компонент для работы
@@ -12,6 +12,8 @@ class FileProcessing extends \yii\base\Component
 {
 
     protected static $adapter = null;
+
+    protected static $http = null;
 
     protected static $mimeType = null;
 
@@ -52,6 +54,29 @@ class FileProcessing extends \yii\base\Component
     }
 
     /**
+     * Get object HttpClient
+     * @return object
+     */
+    public function getHttpClient()
+    {
+        if (false === is_object(static::$http)) {
+            $params = [
+                'class'          => Client::className(),
+                'requestConfig'  => [
+                    'options' => $this->curlOptions,
+                    'format'  => Client::FORMAT_RAW_URLENCODED
+                ],
+                'responseConfig' => [
+                    'format' => Client::FORMAT_RAW_URLENCODED
+                ],
+            ];
+
+            static::$http = \Yii::createObject($params);
+        }
+        return static::$http;
+    }
+
+    /**
      * Запись данных для задач
      *
      * @param string $name Наименование задачи
@@ -74,6 +99,7 @@ class FileProcessing extends \yii\base\Component
             $result['name']  = $name;
 
             $model = $this->sourceModel($result);
+            
             if ($model->save()) {
                 ++$count;
             } else {
@@ -104,25 +130,24 @@ class FileProcessing extends \yii\base\Component
 
                 if ($job = $this->jobsOne(['name' => $source])) {
                     $callback = $job->callback;
-                    if (Jobs::STATUS_COMPLETE === (int)$job->status) {
-                        $job->status = Jobs::STATUS_PREPARE;
+                    if ($job::STATUS_COMPLETE === (int)$job->status) {
+                        $job->status = $job::STATUS_PREPARE;
                         $job->save();
                     }
-                    if (Jobs::STATUS_ERROR === (int)$job->status) {
-                        $job->status = Jobs::STATUS_PREPARE;
+                    if ($job::STATUS_ERROR === (int)$job->status) {
+                        $job->status = $job::STATUS_PREPARE;
                         $job->save();
                     }
-                    $job->refresh();
 
-                    if (Jobs::STATUS_PREPARE === (int)$job->status) {
+                    if ($job::STATUS_PREPARE === (int)$job->status) {
                         $createJob = true;
                     }
                 }
 
                 if (empty($callback)) {
                     $group = explode('::', $source)[0];
-                    if (isset($this->config['callbacks'][$group])) {
-                        $callback  = $this->config['callbacks'][$group];
+                    if (isset($this->config['callback'][$group])) {
+                        $callback  = $this->config['callback'][$group];
                         $createJob = true;
                     }
                 }
@@ -136,8 +161,8 @@ class FileProcessing extends \yii\base\Component
                 $jobs = $this->jobsAll($jobsId);
                 if ($jobs) {
                     foreach ($jobs as $job) {
-                        if (Jobs::STATUS_PREPARE === (int)$job->status) {
-                            $job->status = Jobs::STATUS_WAIT;
+                        if ($job::STATUS_PREPARE === (int)$job->status) {
+                            $job->status = $job::STATUS_WAIT;
                             $job->save();
                         }
                     }
@@ -157,7 +182,7 @@ class FileProcessing extends \yii\base\Component
      * @param int $status Статус по умолчанию
      * @return boolean
      */
-    public function addJob($name, $callback, $status = Jobs::STATUS_PREPARE)
+    public function addJob($name, $callback, $status = 0)
     {
         $return = false;
 
@@ -168,10 +193,11 @@ class FileProcessing extends \yii\base\Component
         $total = $this->sourceCount($name);
 
         if ($total) {
-            $params = [
+            $jobsModel = $this->jobsModel();
+            $params    = [
                 'name'     => $name,
                 'callback' => $callback,
-                'status'   => ($this->checkSorceAccess($name) ? $status : Jobs::STATUS_ERROR),
+                'status'   => ($this->checkSorceAccess($name) ? $status : $jobsModel::STATUS_ERROR),
                 'total'    => $total,
             ];
 
@@ -183,7 +209,7 @@ class FileProcessing extends \yii\base\Component
             } else {
                 $params['time_create'] = time();
 
-                $job = new Jobs($params);
+                $job = $this->jobsModel($params);
             }
             if ($job->save()) {
                 $job->refresh();
@@ -230,7 +256,7 @@ class FileProcessing extends \yii\base\Component
         $sanitizedUrl = filter_var($url, FILTER_SANITIZE_URL);
 
         if ($sanitizedUrl) {
-            $curl = new components\Curl();
+            $curl = new Client;
             foreach ($this->curlOptions as $name => $value) {
                 $curl->setOption($name, $value);
             }
@@ -412,4 +438,5 @@ class FileProcessing extends \yii\base\Component
     {
         return true;
     }
+
 }

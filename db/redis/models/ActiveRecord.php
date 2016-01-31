@@ -6,6 +6,7 @@ use Yii;
 use yii\base\NotSupportedException;
 use yii\helpers\Inflector;
 use yii\helpers\StringHelper;
+use yii\helpers\ArrayHelper;
 
 /**
  * ActiveRecord
@@ -37,19 +38,60 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
         throw new NotSupportedException();
     }
 
-    public static function one($params = [])
+    public static function getQuery($params = [], $limit = 0, $page = 0)
     {
-        return static::findOne($params);
-    }
-
-    public static function all($params = [], $limit = 0, $page = 0)
-    {
-        $query = static::findByCondition($params);
+        $query = static::find();
         if ((int)$limit) {
             $query->limit((int)$limit)
                 ->offset((int)$limit * (int)$page);
         }
-        return $query->all();
+        if ($params) {
+            if (is_array($params)) {
+                if (ArrayHelper::isAssociative($params)) {
+                    $query = static::findByCondition($params);
+                } else {
+                    foreach ($params as $key => $value) {
+                        $data = [];
+                        $type = 'and';
+                        if (is_array($value)) {
+                            if (isset($value[0]) && 2 === count($value)) {
+                                $value = [$value[0], $key, $value];
+                            }
+                            $data = $value;
+                            $type = ('or' === $key) ? 'or' : $type;
+                        } else {
+                            $data[$key] = $value;
+                        }
+
+                        switch ($type) {
+                            case 'and':
+                                $query->andWhere($data);
+                                break;
+                            case 'or':
+                                $query->orWhere($data);
+                                break;
+                        }
+                    }
+                }
+            } else {
+                $query = static::findByCondition($params);
+            }
+        }
+        echo '<pre>',
+        '$query: ', print_r($query, true), PHP_EOL,
+        '</pre>';
+
+        return $query;
+    }
+
+    public static function one($params = [])
+    {
+        return static::getQuery($params, 1)->one();
+    }
+
+    public static function all($params = [], $limit = 0, $page = 0)
+    {
+        return static::getQuery($params, $limit, $page)->all();
     }
 
     public static function names($params = [])

@@ -43,23 +43,25 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
 
     public static function model($params = [])
     {
-        $model = new static;
+        $tableName = static::tableName();
 
         if ('zset' === static::$type) {
             if (is_array($params)) {
-                $model->tableName = isset($params['name']) ? (string)$params['name'] : $model->tableName;
-                unset($params['name']);
+                if (isset($params['name'])) {
+                    $tableName = (string)$params['name'];
+                    unset($params['name']);
+                }
             } else {
-                $model->tableName = (string)$params;
-                $params = null;
+                $tableName = (string)$params;
+                $params    = [];
             }
-        } else {
-            $model->tableName = static::tableName();
         }
+        $params['class'] = static::className();
+        
+        $model = \Yii::createObject($params);
 
-        if ($params) {
-            $model->setAttributes($params);
-        }
+        $model->tableName = $tableName;
+
         return $model;
     }
 
