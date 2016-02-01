@@ -52,7 +52,10 @@ class Component
                 'class'  => $class,
                 'config' => $config,
             ];
-            return \Yii::createObject($params);
+            $object = \Yii::createObject($params);
+            if ($object instanceof FileProcessing) {
+                return $object;
+            }
         }
 
         return null;
