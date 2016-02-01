@@ -23,9 +23,12 @@ class FileProcessing extends \yii\base\Component
     public $config = null;
 
     public $curlOptions = [
+        CURLOPT_HEADER         => false,
+        CURLOPT_TIMEOUT        => 30,
         CURLOPT_USERAGENT      => 'Yii2 file daemon',
-        CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_RETURNTRANSFER => true,
         CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_SSL_VERIFYHOST => false,
     ];
@@ -59,32 +62,62 @@ class FileProcessing extends \yii\base\Component
      * @param string $url Url
      * @return object
      */
-    public function getWebClient($url = '')
+    public function getWebClient()
     {
         if (false === is_object(static::$http)) {
-            $params = [
-                'class'          => Client::className(),
-                'transport'      => 'yii\httpclient\CurlTransport',
-                'requestConfig'  => [
-                    'options' => $this->curlOptions,
-                    'format'  => Client::FORMAT_RAW_URLENCODED
-                ],
-                'responseConfig' => [
-                    'format' => Client::FORMAT_RAW_URLENCODED
-                ],
-            ];
-
-            static::$http = \Yii::createObject($params);
+            static::$http = new components\Curl();
         }
+        static::$http->reset()
+            ->setOptions($this->curlOptions);
 
-        $client = static::$http
-            ->createRequest();
+        return static::$http;
+    }
 
-        if ($url) {
-            $client->setUrl($url);
+    /**
+     * Request file from url
+     * 
+     * @param string $url Url for request
+     * @param string $method HTTP request method
+     * @param array $data
+     * @return bool|object
+     */
+    public function requestUrl($url, $method = 'get', $data = [])
+    {
+        $return       = false;
+        $sanitizedUrl = filter_var($url, FILTER_SANITIZE_URL);
+        try {
+            $webClient = $this->getWebClient();
+            if ($data) {
+                $data = http_build_query($data);
+                if ('post' === $method) {
+                    $webClient->setOption(CURLOPT_POSTFIELDS, $data);
+                }
+                if ('get' === $method) {
+                    $sanitizedUrl .= (mb_strpos($sanitizedUrl, '?') ? '&' : '?') . $data;
+                }
+            }
+            if (method_exists($webClient, $method)) {
+                if ($webClient->$method($sanitizedUrl)) {
+                    $return = $webClient;
+                } else {
+                    $error = $webClient->error;
+                    if (empty($error)) {
+                        if (isset(\yii\web\Response::$httpStatuses[$webClient->code])) {
+                            $error = \yii\web\Response::$httpStatuses[$webClient->code];
+                        }
+                    }
+                    $message = "Curl error:" . PHP_EOL
+                        . "code: {$webClient->code}" . PHP_EOL
+                        . "error: {$error}" . PHP_EOL
+                        . "errNo: {$webClient->errNo}" . PHP_EOL
+                        . "info: " . print_r($webClient->info, true);
+                    \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
+                }
+            }
+        } catch (\Exception $e) {
+            \Yii::error("Error URL: {$url}.\n{$e->getMessage()}", __METHOD__ . '(' . __LINE__ . ')');
         }
-
-        return $client;
+        return $return;
     }
 
     /**
@@ -240,14 +273,8 @@ class FileProcessing extends \yii\base\Component
     {
         $return = false;
         $item   = $this->sourceOne($name);
-        if ($item) {
-            $curl = new components\Curl();
-            $curl->setOptions($this->curlOptions);
-            $curl->head($item->url);
-
-            if ($curl->code) {
-                $return = true;
-            }
+        if ($item && $this->requestUrl($item->url, 'head')) {
+            $return = true;
         }
         return $return;
     }
@@ -263,34 +290,16 @@ class FileProcessing extends \yii\base\Component
     {
         YII_DEBUG && \Yii::trace($url, __METHOD__ . '(' . __LINE__ . ')');
 
-        $return       = false;
-        $sanitizedUrl = filter_var($url, FILTER_SANITIZE_URL);
+        $return = false;
 
-        if ($sanitizedUrl) {
-            $webClient = $this->getWebClient($sanitizedUrl)
-                ->setMethod('head');
-
-            try {
-                $response = $webClient->send();
-            } catch (\Exception $e) {
-                \Yii::error("Could not get file from URL: {$url}.\n{$e->getMessage()}", __METHOD__ . '(' . __LINE__ . ')');
-                return $return;
-            }
-
-            if (false === $response->isOk) {
-                \Yii::error("Could not get file from URL: {$url}", __METHOD__ . '(' . __LINE__ . ')');
-                return $return;
-            }
-
-            $headers = $response->headers;
-
+        if ($response = $this->requestUrl($url, 'head')) {
             \Yii::info("URL: {$url}", __METHOD__ . '(' . __LINE__ . ')');
 
-            if ($this->checkContentType($headers->get('content-type'))) {
+            if ($this->checkContentType($response->info['content_type'])) {
                 $return = [
                     'url'       => $url,
-                    'file'      => md5($url . $headers->get('content-length')),
-                    'extension' => pathinfo($sanitizedUrl, PATHINFO_EXTENSION),
+                    'file'      => md5($url . $response->info['download_content_length']),
+                    'extension' => pathinfo($response->getOption(CURLOPT_URL), PATHINFO_EXTENSION),
                 ];
             }
         }
@@ -311,41 +320,32 @@ class FileProcessing extends \yii\base\Component
             \Yii::trace('getFile $args: ' . var_export($args, true), __METHOD__ . '(' . __LINE__ . ')');
         }
 
-        $return       = false;
-        $sanitizedUrl = filter_var($url, FILTER_SANITIZE_URL);
+        $return = false;
 
-        if ($sanitizedUrl && $file) {
+        if ($file && $response = $this->requestUrl($url)) {
+            \Yii::info("URL: {$url}", __METHOD__ . '(' . __LINE__ . ')');
 
-            $webClient = $this->getWebClient($sanitizedUrl);
-
-            try {
-                $response = $webClient->send();
-            } catch (\Exception $e) {
-                \Yii::error("Could not get file from URL: {$url}. \n{$e->getMessage()}", __METHOD__ . '(' . __LINE__ . ')');
-                return $return;
-            }
-            $headers = $response->headers;
-
-            if ($response->isOk) {
-
-                \Yii::info("URL: {$url}", __METHOD__ . '(' . __LINE__ . ')');
-
-                if ($this->checkContentType($headers->get('content-type'))) {
-                    if (file_put_contents($file, $response->getData())) {
-                        $return = $file;
-                    } else {
-                        \Yii::error("Could not save file: {$file}", __METHOD__ . '(' . __LINE__ . ')');
-                    }
+            if ($this->checkContentType($response->info['content_type'])) {
+                if (file_put_contents($file, $response->response)) {
+                    $return = $file;
+                } else {
+                    \Yii::error("Could not save file: {$file}", __METHOD__ . '(' . __LINE__ . ')');
                 }
             }
         }
         return $return;
     }
 
+    /**
+     * Check mime type
+     * 
+     * @param string $contentType Mime type
+     * @return boolean
+     */
     public function checkContentType($contentType = '')
     {
         $return = true;
-        if (static::$mimeType) {
+        if ($contentType && static::$mimeType) {
             $return = false;
             if (is_array(static::$mimeType)) {
                 foreach (static::$mimeType as $value) {
@@ -362,14 +362,14 @@ class FileProcessing extends \yii\base\Component
         }
 
         if (false === $return) {
-            \Yii::error("Incorrect mimme type: " . implode(',', (array)static::$mimeType), __METHOD__ . '(' . __LINE__ . ')');
+            \Yii::error("Incorrect mime type: " . implode(',', (array)static::$mimeType), __METHOD__ . '(' . __LINE__ . ')');
         }
 
         return $return;
     }
 
     /**
-     * Отправка результатов обработки не активных задач
+     * Sending the results of treatment are not active tasks
      */
     public function transferResults()
     {
@@ -391,7 +391,7 @@ class FileProcessing extends \yii\base\Component
     }
 
     /**
-     * Отправка результатов обработки задач
+     * Send results processing tasks
      *
      * @param string $id ID задачи
      * @return boolean
@@ -419,9 +419,7 @@ class FileProcessing extends \yii\base\Component
                     }
 
                     if ($data) {
-                        $curl = new components\Curl;
-                        $curl->setOption(CURLOPT_POSTFIELDS, http_build_query(['data' => $data]));
-                        if ($curl->post($job->callback)) {
+                        if ($response = $this->requestUrl($job->callback, 'post', ['data' => $data])) {
                             $message = "Send data successful!\n\t"
                                 . "table: {$name},\n\t"
                                 . "total: {$total},\n\t"
@@ -429,13 +427,6 @@ class FileProcessing extends \yii\base\Component
                                 . "page: {$page}";
                             \Yii::info($message, __METHOD__ . '(' . __LINE__ . ')');
                             $return  = true;
-                        } else {
-                            $message = "Send data to callback was error!\n"
-                                . "\nresponse: " . var_export($curl->response, true)
-                                . "\ncode: " . var_export($curl->code, true)
-                                . "\nerror: " . var_export($curl->error, true)
-                                . "\ninfo: " . var_export($curl->info, true);
-                            \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
                         }
                     }
                 }
@@ -455,7 +446,7 @@ class FileProcessing extends \yii\base\Component
     }
 
     /**
-     * Сохранение файла
+     * Save file
      *
      * @param array $params Массив в формате:
      * 

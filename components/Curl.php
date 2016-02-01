@@ -20,7 +20,6 @@
 namespace phantomd\filedaemon\components;
 
 use Yii;
-use yii\base\Component;
 use yii\base\Exception;
 use yii\helpers\Json;
 use yii\web\HttpException;
@@ -48,6 +47,13 @@ class Curl
     public $error = null;
 
     public $errNo = null;
+
+    /**
+     * @var integer maximum symbols count of the request content, which should be taken to compose a
+     * log and profile messages. Exceeding content will be truncated.
+     * @see createRequestLogToken()
+     */
+    public $contentLoggingMaxSize = 2000;
 
     /**
      * @var array HTTP-Status Code
@@ -218,6 +224,9 @@ class Curl
         //reset response & status code
         $this->response = null;
         $this->code     = null;
+        $this->errNo    = null;
+        $this->error    = null;
+        $this->info     = null;
 
         return $this;
     }
@@ -247,6 +256,27 @@ class Curl
     }
 
     /**
+     * Composes the log/profiling message token for the given HTTP request parameters.
+     * This method should be used by transports during request sending logging.
+     * @param string $method request method name.
+     * @param string $url request URL.
+     * @param array $headers request headers.
+     * @param string $content request content.
+     * @return string log token.
+     */
+    public function createRequestLogToken($method, $url, $headers, $content = '')
+    {
+        $token = strtoupper($method) . ' ' . $url;
+        if (!empty($headers)) {
+            $token .= "\n" . implode("\n", $headers);
+        }
+        if ($content !== null) {
+            $token .= "\n\n" . \yii\helpers\StringHelper::truncate($content, $this->contentLoggingMaxSize);
+        }
+        return $token;
+    }
+
+    /**
      * Performs HTTP request
      *
      * @param string  $method
@@ -266,6 +296,9 @@ class Curl
         //set request type and writer function
         $this->setOption(CURLOPT_CUSTOMREQUEST, strtoupper($method));
 
+        // set request url
+        $this->setOption(CURLOPT_URL, $url);
+
         //check if method is head and set no body
         if ($method === 'HEAD') {
             $this->setOption(CURLOPT_NOBODY, true);
@@ -277,14 +310,16 @@ class Curl
             });
         }
 
-        //setup error reporting and profiling
-        Yii::trace("Start sending cURL-Request: {$method} {$url}\n", __METHOD__);
-        Yii::beginProfile("{$method} {$url}#" . md5(serialize($this->getOption(CURLOPT_POSTFIELDS))), __METHOD__);
-
+        if (YII_DEBUG) {
+            $token = $this->createRequestLogToken($method, $url, $this->getOption(CURLOPT_HTTPHEADER));
+            //setup error reporting and profiling
+            \Yii::trace("Start sending cURL-Request: {$method} {$url}\n", __METHOD__);
+            \Yii::beginProfile($token, __METHOD__);
+        }
         /**
          * proceed curl
          */
-        $curl = curl_init($url);
+        $curl = curl_init();
         curl_setopt_array($curl, $this->getOptions());
         $body = curl_exec($curl);
 
@@ -299,12 +334,14 @@ class Curl
         curl_close($curl);
 
         //end yii debug profile
-        Yii::endProfile("{$method} {$url}#" . md5(serialize($this->getOption(CURLOPT_POSTFIELDS))), __METHOD__);
+        YII_DEBUG && \Yii::endProfile($token, __METHOD__);
+
+        //check if curl was successful
+        if ($this->errNo || $this->response === false) {
+            throw new Exception('Curl error: #' . $this->errNo . ' - ' . $this->error);
+        }
 
         $return = true;
-        if ($this->errNo) {
-            $return = false;
-        }
         //check responseCode and return data/status
         if ($this->code >= 200 && $this->code < 300) {
             // all between 200 && 300 is successful
