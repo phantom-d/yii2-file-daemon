@@ -470,9 +470,6 @@ class FileProcessing extends \yii\base\Component
         YII_DEBUG && \Yii::trace($params, __METHOD__ . '(' . __LINE__ . ')');
 
         $return = false;
-        if (false === parent::makeFile($params)) {
-            return $return;
-        }
         if (empty($params)) {
             return $return;
         }
@@ -486,122 +483,20 @@ class FileProcessing extends \yii\base\Component
                     )
             );
         }
-        $command = "/usr/bin/env gm convert -limit threads 2 '{$source}'";
 
-        if (is_file($source) && false === empty($params['targets'])) {
-            $targets = $this->sortTargets($params['targets']);
-            $target  = FileHelper::normalizePath(
+        if (is_file($source)) {
+            $target = FileHelper::normalizePath(
                     \Yii::getAlias(
                         $params['directories']['target'] . DIRECTORY_SEPARATOR
-                        . $params['file']
+                        . basename($params['file']) . '.' . $params['extension']
                     )
             );
-            $count   = count($targets);
-
-            $imageQuality = 75;
-            if (false === empty($params['quality'])) {
-                $imageQuality = (int)$params['quality'];
-            }
-            $command .= " -quality {$imageQuality} +profile '*' "
-                . "-write '{$target}.{$params['extension']}'";
-
-            foreach ($targets as $index => $image) {
-                $quality = $imageQuality;
-                if (false === empty($image['quality']) && (int)$image['quality']) {
-                    $quality = (int)$image['quality'];
+            if ($return = copy($source, $target)) {
+                if (false === empty($params['source_delete'])) {
+                    unlink($source);
                 }
-
-                $command .= " -quality {$quality} +profile '*' ";
-
-                $crop         = (false === empty($image['crop']));
-                $resizeParams = '';
-
-                if ($crop && false === in_array(mb_strtolower($image['crop']), $this->garvity)) {
-                    $image['crop'] = self::CROP_DEFAULT;
-                }
-                if ($crop) {
-                    $info = getimagesize($source);
-                    if ($info) {
-                        $crop = $info[0] / $info[1];
-                    } else {
-                        $crop = false;
-                    }
-                }
-
-                if (false === empty($image['width']) || false === empty($image['height'])) {
-                    YII_DEBUG && \Yii::trace($image, __METHOD__ . '(' . __LINE__ . ')');
-                    if (empty($image['width'])) {
-                        if (false === empty($image['height'])) {
-                            if ($crop && 1 > $crop) {
-                                $resizeParams .= "-resize '";
-                            } else {
-                                $resizeParams .= "-resize 'x";
-                            }
-                        }
-                    } else {
-                        if ($crop && 1 <= $crop) {
-                            if (false === empty($image['height'])) {
-                                if ((int)$image['height'] > (int)$image['width']) {
-                                    $resizeParams .= "-resize 'x";
-                                } else {
-                                    $resizeParams .= "-resize 'x{$image['width']}";
-                                }
-                            } else {
-                                $resizeParams .= "-resize 'x{$image['width']}";
-                            }
-                        } else {
-                            $resizeParams .= "-resize '{$image['width']}x";
-                        }
-                    }
-
-                    YII_DEBUG && \Yii::trace('$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
-
-                    if (empty($image['height'])) {
-                        if (false === empty($image['width'])) {
-                            $resizeParams .= ">' ";
-                        }
-                    } else {
-                        if ($crop) {
-                            if (1 > $crop) {
-                                if (false === empty($image['width'])) {
-                                    if ((int)$image['height'] > (int)$image['width']) {
-                                        $resizeParams .= "{$image['height']}>' ";
-                                    } else {
-                                        $resizeParams .= ">' ";
-                                    }
-                                } else {
-                                    $resizeParams .= "{$image['height']}x>' ";
-                                }
-                            } else {
-                                $resizeParams .= ">' ";
-                            }
-                        } else {
-                            $resizeParams .= "{$image['height']}>' ";
-                        }
-                    }
-                    YII_DEBUG && \Yii::trace('$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
-                }
-
-                if ($crop && false === empty($resizeParams)) {
-                    $resizeParams .= " -gravity {$image['crop']} -crop {$image['width']}x{$image['height']}+0+0 +repage ";
-                }
-                $command .= $resizeParams;
-
-                if ($count > ($index + 1)) {
-                    $command .= " -write ";
-                }
-                $command .= "'{$target}{$image['suffix']}.{$params['extension']}'";
-            }
-            $return = !(bool)`{$command}`;
-
-            if (false === empty($params['source_delete'])) {
-                unlink($source);
             }
         }
-
-        YII_DEBUG && \Yii::trace('$command: ' . $command, __METHOD__ . '(' . __LINE__ . ')');
-        YII_DEBUG && \Yii::trace($return, __METHOD__ . '(' . __LINE__ . ')');
-
         return $return;
     }
 

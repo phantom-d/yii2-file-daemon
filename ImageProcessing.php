@@ -143,8 +143,8 @@ class ImageProcessing extends FileProcessing
      *     'source_delete' => true,
      *     'file'          => 'target_file',
      *     'directories'   => [
-     *         'source' => '/var/www/temp/',
-     *         'target' => '/var/www/uploads/',
+     *         'source' => '@app/temp/',
+     *         'target' => '@app/../uploads/',
      *     ],
      *     'extension'     => 'jpg',
      *     'targets'       => [
@@ -175,9 +175,6 @@ class ImageProcessing extends FileProcessing
         YII_DEBUG && \Yii::trace($params, __METHOD__ . '(' . __LINE__ . ')');
 
         $return = false;
-        if (false === parent::makeFile($params)) {
-            return $return;
-        }
         if (empty($params)) {
             return $return;
         }
