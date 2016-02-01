@@ -3,6 +3,7 @@
 namespace phantomd\filedaemon;
 
 use yii\base\ErrorException;
+use yii\helpers\FileHelper;
 use yii\httpclient\Client;
 
 /**
@@ -15,11 +16,11 @@ class FileProcessing extends \yii\base\Component
 
     protected static $http = null;
 
+    protected static $ftp = null;
+
     protected static $mimeType = null;
 
     public $config = null;
-
-    public $downloader = "/usr/bin/env wget -T 5 -t 1 -q --no-check-certificate --user-agent='%s' -O '%s' '%s' 2>/dev/null";
 
     public $curlOptions = [
         CURLOPT_USERAGENT      => 'Yii2 file daemon',
@@ -55,13 +56,15 @@ class FileProcessing extends \yii\base\Component
 
     /**
      * Get object HttpClient
+     * @param string $url Url
      * @return object
      */
-    public function getHttpClient()
+    public function getWebClient($url = '')
     {
         if (false === is_object(static::$http)) {
             $params = [
                 'class'          => Client::className(),
+                'transport'      => 'yii\httpclient\CurlTransport',
                 'requestConfig'  => [
                     'options' => $this->curlOptions,
                     'format'  => Client::FORMAT_RAW_URLENCODED
@@ -73,7 +76,15 @@ class FileProcessing extends \yii\base\Component
 
             static::$http = \Yii::createObject($params);
         }
-        return static::$http;
+
+        $client = static::$http
+            ->createRequest();
+
+        if ($url) {
+            $client->setUrl($url);
+        }
+
+        return $client;
     }
 
     /**
@@ -99,7 +110,7 @@ class FileProcessing extends \yii\base\Component
             $result['name']  = $name;
 
             $model = $this->sourceModel($result);
-            
+
             if ($model->save()) {
                 ++$count;
             } else {
@@ -256,36 +267,31 @@ class FileProcessing extends \yii\base\Component
         $sanitizedUrl = filter_var($url, FILTER_SANITIZE_URL);
 
         if ($sanitizedUrl) {
-            $curl = new Client;
-            foreach ($this->curlOptions as $name => $value) {
-                $curl->setOption($name, $value);
+            $webClient = $this->getWebClient($sanitizedUrl)
+                ->setMethod('head');
+
+            try {
+                $response = $webClient->send();
+            } catch (\Exception $e) {
+                \Yii::error("Could not get file from URL: {$url}.\n{$e->getMessage()}", __METHOD__ . '(' . __LINE__ . ')');
+                return $return;
             }
 
-            $type = true;
-
-            if (static::$mimeType) {
-                $type = false;
-                if (is_array(static::$mimeType)) {
-                    foreach (static::$mimeType as $value) {
-                        if (false !== mb_strpos($curl->info['content_type'], $value)) {
-                            $type = true;
-                            break;
-                        }
-                    }
-                } else {
-                    if (false !== mb_strpos($curl->info['content_type'], static::$mimeType)) {
-                        $type = true;
-                    }
-                }
-            }
-
-            if ($curl->head($sanitizedUrl) && $type) {
-                $return = [
-                    'url'  => $curl->info['url'],
-                    'file' => md5($curl->info['url'] . $curl->info['download_content_length']),
-                ];
-            } else {
+            if (false === $response->isOk) {
                 \Yii::error("Could not get file from URL: {$url}", __METHOD__ . '(' . __LINE__ . ')');
+                return $return;
+            }
+
+            $headers = $response->headers;
+
+            \Yii::info("URL: {$url}", __METHOD__ . '(' . __LINE__ . ')');
+
+            if ($this->checkContentType($headers->get('content-type'))) {
+                $return = [
+                    'url'       => $url,
+                    'file'      => md5($url . $headers->get('content-length')),
+                    'extension' => pathinfo($sanitizedUrl, PATHINFO_EXTENSION),
+                ];
             }
         }
         return $return;
@@ -309,42 +315,56 @@ class FileProcessing extends \yii\base\Component
         $sanitizedUrl = filter_var($url, FILTER_SANITIZE_URL);
 
         if ($sanitizedUrl && $file) {
-            $command = sprintf(
-                $this->downloader, // Wget
-                $this->curlOptions[CURLOPT_USERAGENT], // HTTP User-Agent
-                $file, // Полный путь для сохранения файла
-                $sanitizedUrl // Ссылка для скачивания
-            );
 
-            `{$command}`;
-            YII_DEBUG && \Yii::trace($command, __METHOD__ . '(' . __LINE__ . ')');
+            $webClient = $this->getWebClient($sanitizedUrl);
 
-            if (is_file($file)) {
-                $type = true;
-                if (static::$mimeType) {
-                    $mime = \yii\helpers\FileHelper::getMimeType($file);
-                    $type = false;
-                    if (is_array(static::$mimeType)) {
-                        foreach (static::$mimeType as $value) {
-                            if (false !== mb_strpos($mime, $value)) {
-                                $type = true;
-                                break;
-                            }
-                        }
+            try {
+                $response = $webClient->send();
+            } catch (\Exception $e) {
+                \Yii::error("Could not get file from URL: {$url}. \n{$e->getMessage()}", __METHOD__ . '(' . __LINE__ . ')');
+                return $return;
+            }
+            $headers = $response->headers;
+
+            if ($response->isOk) {
+
+                \Yii::info("URL: {$url}", __METHOD__ . '(' . __LINE__ . ')');
+
+                if ($this->checkContentType($headers->get('content-type'))) {
+                    if (file_put_contents($file, $response->getData())) {
+                        $return = $file;
                     } else {
-                        if (false !== mb_strpos($mime, static::$mimeType)) {
-                            $type = true;
-                        }
+                        \Yii::error("Could not save file: {$file}", __METHOD__ . '(' . __LINE__ . ')');
                     }
-                }
-
-                if ($type) {
-                    $return = $file;
-                } else {
-                    unlink($file);
                 }
             }
         }
+        return $return;
+    }
+
+    public function checkContentType($contentType = '')
+    {
+        $return = true;
+        if (static::$mimeType) {
+            $return = false;
+            if (is_array(static::$mimeType)) {
+                foreach (static::$mimeType as $value) {
+                    if (false !== mb_strpos($contentType, $value)) {
+                        $return = true;
+                        break;
+                    }
+                }
+            } else {
+                if (false !== mb_strpos($contentType, static::$mimeType)) {
+                    $return = true;
+                }
+            }
+        }
+
+        if (false === $return) {
+            \Yii::error("Incorrect mimme type: " . implode(',', (array)static::$mimeType), __METHOD__ . '(' . __LINE__ . ')');
+        }
+
         return $return;
     }
 
@@ -434,9 +454,164 @@ class FileProcessing extends \yii\base\Component
         return $return;
     }
 
+    /**
+     * Сохранение файла
+     *
+     * @param array $params Массив в формате:
+     * 
+     * ```php
+     * $param = [
+     *     'source'        => 'temp_file',
+     *     'source_delete' => true,
+     *     'file'          => 'target_file',
+     *     'directories'   => [
+     *         'source' => '@app/temp/',
+     *         'target' => '@app/../uploads/',
+     *     ],
+     *     'extension'     => 'pdf',
+     * ];
+     * ```
+     * 
+     * @return boolean
+     */
     public function makeFile($params = [])
     {
-        return true;
+        YII_DEBUG && \Yii::trace($params, __METHOD__ . '(' . __LINE__ . ')');
+
+        $return = false;
+        if (false === parent::makeFile($params)) {
+            return $return;
+        }
+        if (empty($params)) {
+            return $return;
+        }
+
+        $source = $params['source'];
+        if (false === is_file($source)) {
+            $source = FileHelper::normalizePath(
+                    \Yii::getAlias(
+                        $params['directories']['source'] . DIRECTORY_SEPARATOR
+                        . basename($params['source'])
+                    )
+            );
+        }
+        $command = "/usr/bin/env gm convert -limit threads 2 '{$source}'";
+
+        if (is_file($source) && false === empty($params['targets'])) {
+            $targets = $this->sortTargets($params['targets']);
+            $target  = FileHelper::normalizePath(
+                    \Yii::getAlias(
+                        $params['directories']['target'] . DIRECTORY_SEPARATOR
+                        . $params['file']
+                    )
+            );
+            $count   = count($targets);
+
+            $imageQuality = 75;
+            if (false === empty($params['quality'])) {
+                $imageQuality = (int)$params['quality'];
+            }
+            $command .= " -quality {$imageQuality} +profile '*' "
+                . "-write '{$target}.{$params['extension']}'";
+
+            foreach ($targets as $index => $image) {
+                $quality = $imageQuality;
+                if (false === empty($image['quality']) && (int)$image['quality']) {
+                    $quality = (int)$image['quality'];
+                }
+
+                $command .= " -quality {$quality} +profile '*' ";
+
+                $crop         = (false === empty($image['crop']));
+                $resizeParams = '';
+
+                if ($crop && false === in_array(mb_strtolower($image['crop']), $this->garvity)) {
+                    $image['crop'] = self::CROP_DEFAULT;
+                }
+                if ($crop) {
+                    $info = getimagesize($source);
+                    if ($info) {
+                        $crop = $info[0] / $info[1];
+                    } else {
+                        $crop = false;
+                    }
+                }
+
+                if (false === empty($image['width']) || false === empty($image['height'])) {
+                    YII_DEBUG && \Yii::trace($image, __METHOD__ . '(' . __LINE__ . ')');
+                    if (empty($image['width'])) {
+                        if (false === empty($image['height'])) {
+                            if ($crop && 1 > $crop) {
+                                $resizeParams .= "-resize '";
+                            } else {
+                                $resizeParams .= "-resize 'x";
+                            }
+                        }
+                    } else {
+                        if ($crop && 1 <= $crop) {
+                            if (false === empty($image['height'])) {
+                                if ((int)$image['height'] > (int)$image['width']) {
+                                    $resizeParams .= "-resize 'x";
+                                } else {
+                                    $resizeParams .= "-resize 'x{$image['width']}";
+                                }
+                            } else {
+                                $resizeParams .= "-resize 'x{$image['width']}";
+                            }
+                        } else {
+                            $resizeParams .= "-resize '{$image['width']}x";
+                        }
+                    }
+
+                    YII_DEBUG && \Yii::trace('$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
+
+                    if (empty($image['height'])) {
+                        if (false === empty($image['width'])) {
+                            $resizeParams .= ">' ";
+                        }
+                    } else {
+                        if ($crop) {
+                            if (1 > $crop) {
+                                if (false === empty($image['width'])) {
+                                    if ((int)$image['height'] > (int)$image['width']) {
+                                        $resizeParams .= "{$image['height']}>' ";
+                                    } else {
+                                        $resizeParams .= ">' ";
+                                    }
+                                } else {
+                                    $resizeParams .= "{$image['height']}x>' ";
+                                }
+                            } else {
+                                $resizeParams .= ">' ";
+                            }
+                        } else {
+                            $resizeParams .= "{$image['height']}>' ";
+                        }
+                    }
+                    YII_DEBUG && \Yii::trace('$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
+                }
+
+                if ($crop && false === empty($resizeParams)) {
+                    $resizeParams .= " -gravity {$image['crop']} -crop {$image['width']}x{$image['height']}+0+0 +repage ";
+                }
+                $command .= $resizeParams;
+
+                if ($count > ($index + 1)) {
+                    $command .= " -write ";
+                }
+                $command .= "'{$target}{$image['suffix']}.{$params['extension']}'";
+            }
+            $return = !(bool)`{$command}`;
+
+            if (false === empty($params['source_delete'])) {
+                unlink($source);
+            }
+        }
+
+        YII_DEBUG && \Yii::trace('$command: ' . $command, __METHOD__ . '(' . __LINE__ . ')');
+        YII_DEBUG && \Yii::trace($return, __METHOD__ . '(' . __LINE__ . ')');
+
+        return $return;
     }
 
 }

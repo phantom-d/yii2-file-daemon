@@ -4,6 +4,7 @@ namespace phantomd\filedaemon;
 
 use yii\base\ErrorException;
 use yii\helpers\StringHelper;
+use yii\helpers\FileHelper;
 
 /**
  * Компонент для работы
@@ -15,7 +16,7 @@ class ImageProcessing extends FileProcessing
 
     protected static $mimeType = 'image';
 
-    protected $garvity         = [
+    protected $garvity = [
         'northwest',
         'north',
         'northeast',
@@ -49,7 +50,11 @@ class ImageProcessing extends FileProcessing
 
         if ($result = $this->arcresultOne($fileName)) {
             $dirName    = dirname($result->path);
-            $targetPath = \yii\helpers\FileHelper::normalizePath($this->config['directories']['target'] . $dirName);
+            $targetPath = FileHelper::normalizePath(
+                    \Yii::getAlias(
+                        $this->config['directories']['target'] . $dirName
+                    )
+            );
             $sourceFile = $targetPath . DIRECTORY_SEPARATOR . $fileName . '.' . $this->config['extension'];
 
             if (is_file($sourceFile)) {
@@ -64,7 +69,7 @@ class ImageProcessing extends FileProcessing
                 'extension'   => $this->config['extension'],
                 'quality'     => (int)$this->config['quality'],
                 'file'        => $fileName,
-                'source'      => $targetPath . DIRECTORY_SEPARATOR . $fileName . '.' . $this->config['extension'],
+                'source'      => $sourceFile,
                 'directories' => [
                     'source' => $targetPath,
                     'target' => $targetPath,
@@ -179,25 +184,38 @@ class ImageProcessing extends FileProcessing
 
         $source = $params['source'];
         if (false === is_file($source)) {
-            $source = $params['directories']['source'] . DIRECTORY_SEPARATOR . basename($params['source']);
+            $source = FileHelper::normalizePath(
+                    \Yii::getAlias(
+                        $params['directories']['source'] . DIRECTORY_SEPARATOR
+                        . basename($params['source'])
+                    )
+            );
         }
         $command = "/usr/bin/env gm convert -limit threads 2 '{$source}'";
 
         if (is_file($source) && false === empty($params['targets'])) {
-            $targets      = $this->sortTargets($params['targets']);
-            $count        = count($targets);
+            $targets = $this->sortTargets($params['targets']);
+            $target  = FileHelper::normalizePath(
+                    \Yii::getAlias(
+                        $params['directories']['target'] . DIRECTORY_SEPARATOR
+                        . $params['file']
+                    )
+            );
+            $count   = count($targets);
+
             $imageQuality = 75;
             if (false === empty($params['quality'])) {
                 $imageQuality = (int)$params['quality'];
             }
             $command .= " -quality {$imageQuality} +profile '*' "
-                . "-write '{$params['directories']['target']}/{$params['file']}.{$params['extension']}'";
+                . "-write '{$target}.{$params['extension']}'";
 
             foreach ($targets as $index => $image) {
                 $quality = $imageQuality;
-                if (false === empty($image['quality'])) {
+                if (false === empty($image['quality']) && (int)$image['quality']) {
                     $quality = (int)$image['quality'];
                 }
+
                 $command .= " -quality {$quality} +profile '*' ";
 
                 $crop         = (false === empty($image['crop']));
@@ -277,7 +295,7 @@ class ImageProcessing extends FileProcessing
                 if ($count > ($index + 1)) {
                     $command .= " -write ";
                 }
-                $command .= "'{$params['directories']['target']}/{$params['file']}{$image['suffix']}.{$params['extension']}'";
+                $command .= "'{$target}{$image['suffix']}.{$params['extension']}'";
             }
             $return = !(bool)`{$command}`;
 

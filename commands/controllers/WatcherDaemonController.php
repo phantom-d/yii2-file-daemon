@@ -50,19 +50,23 @@ class WatcherDaemonController extends DaemonController
     {
         $this->restart();
         sleep($this->sleep);
-        $jobs = \Yii::getAlias('@app/config/daemons/watcher-jobs.php');
+        $this->getConfig();
+
+        if (empty($this->config['daemons'])) {
+            return [];
+        }
 
         $currentDate = strtotime(date('Y-m-d 00:00:00'));
         if ($currentDate > $this->currentDate) {
             $this->currentDate = $currentDate;
-            foreach ($jobs as $key => $value) {
+            foreach ($this->config['daemons'] as $key => $value) {
                 if ($value['enabled']) {
-                    $jobs[$key]['enabled'] = false;
+                    $this->config['daemons'][$key]['enabled'] = false;
                 }
             }
         }
 
-        return $jobs;
+        return $this->config['daemons'];
     }
 
     /**

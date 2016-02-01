@@ -388,28 +388,28 @@ class FileDaemonController extends \vyants\daemon\DaemonController
     protected function doFile($item, $table)
     {
         \Yii::info('Do file - start!', __METHOD__ . '(' . __LINE__ . ')');
-        YII_DEBUG && \Yii::trace($item, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '$item');
+        YII_DEBUG && \Yii::trace($item, __METHOD__ . '(' . __LINE__ . ') --- $item');
 
         $return = false;
 
         if (empty($item) || empty($table)) {
             $args = func_get_args();
-            \Yii::warning($args, __METHOD__ . '(' . __LINE__ . ')' . "\nIncorrect arguments");
+            \Yii::warning($args, __METHOD__ . '(' . __LINE__ . ') --- Incorrect arguments');
             return $return;
         }
 
         if ($file = $this->component->getFileName($item->url)) {
 
-            YII_DEBUG && \Yii::trace($file, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '$file');
+            YII_DEBUG && \Yii::trace($file, __METHOD__ . '(' . __LINE__ . ') --- $file');
 
             $command = $this->commands[(int)$item->command];
 
             $fileName = md5($item->object_id . $file['file']);
-            $tmpName  = tempnam($this->config['directories']['source']);
+            $tmpName  = tempnam(\Yii::getAlias($this->config['directories']['source']));
 
             $path = $this->component->arcresultOne($fileName);
 
-            YII_DEBUG && \Yii::trace($path, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '$path');
+            YII_DEBUG && \Yii::trace($path, __METHOD__ . '(' . __LINE__ . ') --- $path');
 
             $this->itemData = [
                 'table'         => $table,
@@ -422,14 +422,14 @@ class FileDaemonController extends \vyants\daemon\DaemonController
                 'object_id'     => $item->object_id,
                 'score'         => $item->score,
                 'directories'   => $this->config['directories'],
-                'extension'     => $this->config['extension'],
+                'extension'     => isset($this->config['extension']) ? $this->config['extension'] : '',
                 'quality'       => (int)$this->config['quality'],
                 'targets'       => $this->config['targets'],
             ];
 
             if (empty($path)) {
                 $getFile = $this->component->getFile($file['url'], $tmpName);
-                YII_DEBUG && \Yii::trace($getFile, __METHOD__ . '(' . __LINE__ . ') $getFile');
+                YII_DEBUG && \Yii::trace($getFile, __METHOD__ . '(' . __LINE__ . ') --- $getFile');
             }
 
             $method = __FUNCTION__ . \yii\helpers\Inflector::id2camel($command);
@@ -506,16 +506,32 @@ class FileDaemonController extends \vyants\daemon\DaemonController
 
         // Контроль наличия файла в архивной базе
         if (false === empty($path)) {
-            $filePath = FileHelper::normalizePath($this->itemData['directories']['target'] . $path);
+            $filePath = FileHelper::normalizePath(
+                    \Yii::getAlias(
+                        $this->itemData['directories']['target'] . $path
+                    )
+            );
 
             YII_DEBUG && \Yii::trace('$filePath: ' . var_export($filePath, true), __METHOD__ . '(' . __LINE__ . ')');
+
+            $make = false;
+            $file = $filePath . '.' . $this->itemData['extension'];
+
+            YII_DEBUG && \Yii::trace('is_file(' . $file . '): ' . var_export(is_file($file), true), __METHOD__ . '(' . __LINE__ . ')');
+
+            if (false === is_file($file)) {
+                $make = true;
+            }
+
             if (false === empty($this->itemData['targets'])) {
-                $make = false;
                 foreach ($this->itemData['targets'] as $target) {
                     $file = $filePath . $target['suffix'] . '.' . $this->itemData['extension'];
+
                     YII_DEBUG && \Yii::trace('is_file(' . $file . '): ' . var_export(is_file($file), true), __METHOD__ . '(' . __LINE__ . ')');
+
                     if (false === is_file($file)) {
                         $make = true;
+                        break;
                     }
                 }
 
@@ -530,6 +546,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
                     }
 
                     $make = $this->component->getFile($this->itemData['url'], $this->itemData['source']);
+
                     YII_DEBUG && \Yii::trace('$make: ' . var_export($make, true), __METHOD__ . '(' . __LINE__ . ')');
                 } else {
                     $return  = true;
@@ -542,14 +559,28 @@ class FileDaemonController extends \vyants\daemon\DaemonController
 
         // Обработка файла
         if ($make) {
-            $timeDir = FileHelper::normalizePath($this->itemData['directories']['web'] . date('/Y/m/d/H/i'));
+            $timeDir = FileHelper::normalizePath(
+                    \Yii::getAlias(
+                        $this->itemData['directories']['web'] . date('/Y/m/d/H/i')
+                    )
+            );
 
-            $targetPath = FileHelper::normalizePath($this->itemData['directories']['target'] . $timeDir);
-            $mkdir      = !(bool)`/usr/bin/env mkdir -m 775 -p '{$targetPath}' 2>&1`;
-            if ($mkdir) {
-                $this->itemData['directories']['target'] = $targetPath;
-            } else {
-                \Yii::error("Cant create dirrectory: '{$targetPath}'", __METHOD__ . '(' . __LINE__ . ')');
+            $targetPath = FileHelper::normalizePath(
+                    \Yii::getAlias(
+                        $this->itemData['directories']['target'] . $timeDir
+                    )
+            );
+
+            try {
+                $mkdir = FileHelper::createDirectory($targetPath);
+                if ($mkdir) {
+                    $this->itemData['directories']['target'] = $targetPath;
+                } else {
+                    \Yii::error("Can't create dirrectory: '{$targetPath}'", __METHOD__ . '(' . __LINE__ . ')');
+                    return $return;
+                }
+            } catch (\Exception $e) {
+                \Yii::error($e->getMessage(), __METHOD__ . '(' . __LINE__ . ')');
                 return $return;
             }
 
@@ -558,7 +589,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
             }
         }
 
-        // Запись результатов в RedisDB
+        // Запись результатов
         if ($return) {
             $itemDst = [
                 'name'      => $this->itemData['table'],

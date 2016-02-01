@@ -2,12 +2,14 @@
 
 namespace phantomd\filedaemon\traits;
 
-use yii\base\NotSupportedException;
+use yii\helpers\FileHelper;
 
 trait DaemonTrait
 {
 
     protected $config = [];
+
+    protected $configPath = '@app/config/daemons';
 
     protected $commands = [];
 
@@ -41,7 +43,13 @@ trait DaemonTrait
      */
     protected function restart()
     {
-        if (is_file($fileRestart = \Yii::getAlias('@app/config/daemons/restart-' . $this->configName))) {
+        $fileRestart = FileHelper::normalizePath(
+                \Yii::getAlias(
+                    $this->configPath . DIRECTORY_SEPARATOR . 'restart-' . $this->configName
+                )
+        );
+
+        if (is_file($fileRestart)) {
             unlink($fileRestart);
             posix_kill(getmypid(), SIGKILL);
         }
@@ -65,7 +73,18 @@ trait DaemonTrait
     protected function getConfig()
     {
         if (empty($this->config)) {
-            $params = \Yii::$app->params['daemons'];
+            if (isset(\Yii::$app->params['daemons'])) {
+                $params = \Yii::$app->params['daemons'];
+            } else {
+                $fileConfig = FileHelper::normalizePath(
+                        \Yii::getAlias(
+                            $this->configPath . DIRECTORY_SEPARATOR . 'daemons.php'
+                        )
+                );
+                if (is_file($fileConfig)) {
+                    $params = include $fileConfig;
+                }
+            }
 
             if (isset($params[$this->configName])) {
                 if (isset($params[$this->configName]['multi-instance']) && isset($this->isMultiInstance)) {

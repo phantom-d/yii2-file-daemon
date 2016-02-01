@@ -41,10 +41,6 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
     public static function getQuery($params = [], $limit = 0, $page = 0)
     {
         $query = static::find();
-        if ((int)$limit) {
-            $query->limit((int)$limit)
-                ->offset((int)$limit * (int)$page);
-        }
         if ($params) {
             if (is_array($params)) {
                 if (ArrayHelper::isAssociative($params)) {
@@ -77,9 +73,11 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
                 $query = static::findByCondition($params);
             }
         }
-        echo '<pre>',
-        '$query: ', print_r($query, true), PHP_EOL,
-        '</pre>';
+
+        if ((int)$limit) {
+            $query->limit((int)$limit)
+                ->offset((int)$limit * (int)$page);
+        }
 
         return $query;
     }
