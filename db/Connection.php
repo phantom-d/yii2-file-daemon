@@ -51,7 +51,7 @@ class Connection extends Component
             return call_user_func_array([$class, $method], $params);
         }
 
-        throw new UnknownMethodException('Calling unknown method: ' . get_class($this) . "::{$name}()");
+        throw new UnknownMethodException('Calling unknown method: ' . ($class ? $class : get_class($this)) . "::{$name}()");
     }
 
     /**

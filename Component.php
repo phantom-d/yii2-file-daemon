@@ -21,7 +21,7 @@ class Component
      * Initialization
      * 
      * @param array $config
-     * @return object Component
+     * @return object Object instanceof phantomd\filedaemon\FileProcessing
      * @throws InvalidParamException
      */
     public static function init($config)
@@ -32,22 +32,27 @@ class Component
             throw new InvalidParamException($message);
         }
 
-        $type = null;
-
+        $class = null;
         if (false === empty($config['component'])) {
-            $type = ucfirst(strtolower((string)$config['component']));
+            if (class_exists($config['component'])) {
+                $class = $config['component'];
+            } else {
+                $class = __NAMESPACE__ . '\\'
+                    . ucfirst(strtolower((string)$config['component'])) . 'Processing';
+            }
         }
 
-        if ($type) {
-            $component = 'phantomd\\filedaemon\\' . $type . 'Processing';
-
-            if (false === class_exists($component)) {
-                $message = 'Not exist component: `' . $component . '`';
+        if ($class) {
+            if (false === class_exists($class)) {
+                $message = 'Not exist component: `' . $class . '`';
                 \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
                 throw new InvalidParamException($message);
             }
-
-            return new $component(['config' => $config]);
+            $params = [
+                'class'  => $class,
+                'config' => $config,
+            ];
+            return \Yii::createObject($params);
         }
 
         return null;
