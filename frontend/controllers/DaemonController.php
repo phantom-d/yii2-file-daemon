@@ -16,12 +16,6 @@ class DaemonController extends Controller
 
     use \phantomd\filedaemon\traits\DaemonTrait;
 
-    private $_shortName = '';
-
-    protected $component = null;
-
-    protected static $configAlias = '';
-
     public function behaviors()
     {
         $behaviors                      = parent::behaviors();

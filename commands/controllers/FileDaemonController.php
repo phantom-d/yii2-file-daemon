@@ -14,12 +14,12 @@ class FileDaemonController extends \vyants\daemon\DaemonController
     /**
      * @var array Массив задач с установленным количеством потоков
      */
-    private $jobListData = [];
+    protected $jobListData = [];
 
     /**
      * @var string Короткое наименование для конфигурации
      */
-    private $_shortName = '';
+    protected $_shortName = '';
 
     /**
      * @var array Массив с данными для обработки одной записи
@@ -40,8 +40,6 @@ class FileDaemonController extends \vyants\daemon\DaemonController
      * @inheritdoc
      */
     public $maxChildProcesses = 400;
-
-    protected $processing = null;
 
     /**
      * @inheritdoc
@@ -87,7 +85,12 @@ class FileDaemonController extends \vyants\daemon\DaemonController
      */
     protected function doRestart()
     {
-        if (is_file(\Yii::getAlias("@app/config/daemons/restart-{$this->configName}"))) {
+        $fileRestart = FileHelper::normalizePath(
+                \Yii::getAlias(
+                    $this->configPath . DIRECTORY_SEPARATOR . "restart-{$this->configName}"
+                )
+        );
+        if (is_file($fileRestart)) {
             \Yii::info('Do restart - start!', __METHOD__ . '(' . __LINE__ . ')');
             foreach ($this->jobListData as $id) {
                 $keys = 0;
@@ -463,11 +466,16 @@ class FileDaemonController extends \vyants\daemon\DaemonController
         $targets = [];
         $exclude = [];
         // Добавление и сортировка параметров обработки записи
-        if (false === empty($this->config['commands'][$command]['targets'])) {
-            $targets = $this->config['commands'][$command]['targets'];
-            if (false === empty($targets['exclude'])) {
-                $exclude = $targets['exclude'];
-                unset($targets['exclude']);
+        if ($command &&
+            isset($this->config['commands']) &&
+            false === empty($this->config['commands'][$command])) {
+
+            if (isset($this->config['commands'][$command]['targets'])) {
+                $targets = $this->config['commands'][$command]['targets'];
+                if (false === empty($targets['exclude'])) {
+                    $exclude = $targets['exclude'];
+                    unset($targets['exclude']);
+                }
             }
         }
 
@@ -481,7 +489,6 @@ class FileDaemonController extends \vyants\daemon\DaemonController
 
         if ($targets) {
             $this->itemData['targets'] += $targets;
-
             if (isset($this->config['commands'][$command]['method']['merge'])) {
                 if (empty($this->config['commands'][$command]['method']['merge'])) {
                     $this->itemData['targets'] = $targets;

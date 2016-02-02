@@ -14,8 +14,6 @@ class FileProcessing extends \yii\base\Component
 
     protected static $adapter = null;
 
-    protected static $http = null;
-
     protected static $ftp = null;
 
     protected static $mimeType = null;
@@ -46,7 +44,12 @@ class FileProcessing extends \yii\base\Component
             throw new InvalidParamException($message);
         }
 
-        static::$adapter = new db\Connection(['params' => $this->config['db']]);
+        $params = [
+            'class' => __NAMESPACE__ . '\db\Connection',
+            'params' => $this->config['db'],
+        ];
+        
+        static::$adapter = \Yii::createObject($params);
     }
 
     /**
@@ -64,13 +67,14 @@ class FileProcessing extends \yii\base\Component
      */
     public function getWebClient()
     {
-        if (false === is_object(static::$http)) {
-            static::$http = new components\Curl();
-        }
-        static::$http->reset()
+        $params = [
+            'class' => __NAMESPACE__ . '\components\Curl',
+        ];
+
+        $client = \Yii::createObject($params)
             ->setOptions($this->curlOptions);
 
-        return static::$http;
+        return $client;
     }
 
     /**
@@ -81,7 +85,7 @@ class FileProcessing extends \yii\base\Component
      * @param array $data
      * @return bool|object
      */
-    public function requestUrl($url, $method = 'get', $data = [])
+    public function sendRequest($url, $method = 'get', $data = [])
     {
         $return       = false;
         $sanitizedUrl = filter_var($url, FILTER_SANITIZE_URL);
@@ -273,7 +277,7 @@ class FileProcessing extends \yii\base\Component
     {
         $return = false;
         $item   = $this->sourceOne($name);
-        if ($item && $this->requestUrl($item->url, 'head')) {
+        if ($item && $this->sendRequest($item->url, 'head')) {
             $return = true;
         }
         return $return;
@@ -292,7 +296,7 @@ class FileProcessing extends \yii\base\Component
 
         $return = false;
 
-        if ($response = $this->requestUrl($url, 'head')) {
+        if ($response = $this->sendRequest($url, 'head')) {
             \Yii::info("URL: {$url}", __METHOD__ . '(' . __LINE__ . ')');
 
             if ($this->checkContentType($response->info['content_type'])) {
@@ -322,7 +326,7 @@ class FileProcessing extends \yii\base\Component
 
         $return = false;
 
-        if ($file && $response = $this->requestUrl($url)) {
+        if ($file && $response = $this->sendRequest($url)) {
             \Yii::info("URL: {$url}", __METHOD__ . '(' . __LINE__ . ')');
 
             if ($this->checkContentType($response->info['content_type'])) {
@@ -419,7 +423,7 @@ class FileProcessing extends \yii\base\Component
                     }
 
                     if ($data) {
-                        if ($response = $this->requestUrl($job->callback, 'post', ['data' => $data])) {
+                        if ($response = $this->sendRequest($job->callback, 'post', ['data' => $data])) {
                             $message = "Send data successful!\n\t"
                                 . "table: {$name},\n\t"
                                 . "total: {$total},\n\t"

@@ -266,7 +266,7 @@ class Curl
      */
     public function createRequestLogToken($method, $url, $headers, $content = '')
     {
-        $token = strtoupper($method) . ' ' . $url;
+        $token = microtime(true) . '  ' . strtoupper($method) . ' ' . $url;
         if (!empty($headers)) {
             $token .= "\n" . implode("\n", $headers);
         }

@@ -27,7 +27,7 @@ class Component
     public static function init($config)
     {
         if (empty($config)) {
-            $message = 'Could not be empty `config`!';
+            $message = 'Component error: Could not be empty `config`!';
             \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
             throw new InvalidParamException($message);
         }
@@ -44,7 +44,7 @@ class Component
 
         if ($class) {
             if (false === class_exists($class)) {
-                $message = 'Not exist component: `' . $class . '`';
+                $message = "Component error: Not exist - `{$class}`";
                 \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
                 throw new InvalidParamException($message);
             }
@@ -55,6 +55,10 @@ class Component
             $object = \Yii::createObject($params);
             if ($object instanceof FileProcessing) {
                 return $object;
+            } else {
+                $message = "Component error: `{$class}` must be instance of `FileProcessing`!";
+                \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
+                throw new InvalidParamException($message);
             }
         }
 

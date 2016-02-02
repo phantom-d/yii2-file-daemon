@@ -7,6 +7,8 @@ use yii\helpers\FileHelper;
 trait DaemonTrait
 {
 
+    protected $_shortName = '';
+
     protected $config = [];
 
     protected $configPath = '@app/config/daemons';
@@ -15,9 +17,9 @@ trait DaemonTrait
 
     protected $configName = '';
 
-    protected $processing = null;
-
     protected $component = null;
+
+    protected static $configAlias = '';
 
     public function init()
     {
@@ -45,7 +47,7 @@ trait DaemonTrait
     {
         $fileRestart = FileHelper::normalizePath(
                 \Yii::getAlias(
-                    $this->configPath . DIRECTORY_SEPARATOR . 'restart-' . $this->configName
+                    $this->configPath . DIRECTORY_SEPARATOR . "restart-{$this->configName}"
                 )
         );
 
