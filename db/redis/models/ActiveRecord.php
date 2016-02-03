@@ -46,27 +46,31 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
                 if (ArrayHelper::isAssociative($params)) {
                     $query = static::findByCondition($params);
                 } else {
-                    foreach ($params as $key => $value) {
-                        $data = [];
-                        $type = 'and';
-                        if (is_array($value)) {
-                            if (isset($value[0]) && 2 === count($value)) {
-                                $value = [$value[0], $key, $value];
+                    if (ArrayHelper::isAssociative($params, false)) {
+                        foreach ($params as $key => $value) {
+                            $data = [];
+                            $type = 'and';
+                            if (is_array($value)) {
+                                if (isset($value[0]) && 2 === count($value)) {
+                                    $value = [$value[0], $key, $value];
+                                }
+                                $data = $value;
+                                $type = ('or' === $key) ? 'or' : $type;
+                            } else {
+                                $data[$key] = $value;
                             }
-                            $data = $value;
-                            $type = ('or' === $key) ? 'or' : $type;
-                        } else {
-                            $data[$key] = $value;
-                        }
 
-                        switch ($type) {
-                            case 'and':
-                                $query->andWhere($data);
-                                break;
-                            case 'or':
-                                $query->orWhere($data);
-                                break;
+                            switch ($type) {
+                                case 'and':
+                                    $query->andWhere($data);
+                                    break;
+                                case 'or':
+                                    $query->orWhere($data);
+                                    break;
+                            }
                         }
+                    } else {
+                        $query = static::findByCondition($params);
                     }
                 }
             } else {

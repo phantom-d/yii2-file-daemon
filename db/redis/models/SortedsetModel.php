@@ -47,10 +47,17 @@ class SortedsetModel extends ActiveModel
      * @return mixed
      * @throws InvalidParamException
      */
-    public static function one($params = [], $remove = false)
+    public static function one($params = [])
     {
         $return = null;
-        $model  = static::model($params);
+        $remove = false;
+
+        if (isset($params['remove'])) {
+            $remove = (bool)$params['remove'];
+            unset($params['remove']);
+        }
+
+        $model = static::model($params);
 
         if ($model->checkTable()) {
             $db    = static::getDb();

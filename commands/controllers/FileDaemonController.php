@@ -6,10 +6,10 @@ use yii\base\ErrorException;
 use yii\helpers\FileHelper;
 use app\models\Joblist;
 
-class FileDaemonController extends \vyants\daemon\DaemonController
+class FileDaemonController extends DaemonController
 {
 
-    use phantomd\filedaemon\traits\DaemonTrait;
+    use \phantomd\filedaemon\traits\DaemonTrait;
 
     /**
      * @var array Массив задач с установленным количеством потоков
@@ -181,7 +181,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
         }
 
 
-        YII_DEBUG && \Yii::trace($this->jobListData, __METHOD__ . '(' . __LINE__ . ') --- $this->jobListData');
+        YII_DEBUG && \Yii::info($this->jobListData, __METHOD__ . '(' . __LINE__ . ') --- $this->jobListData');
 
         if ($jobs) {
             foreach ($jobs as $job) {
@@ -198,7 +198,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
 
                 // Очистка контейнера со списком потоков и удаление потоков
                 if (false === $job->statusWork) {
-                    $this->doTransfer($jobId);
+                    $this->component->transfer($jobId);
                     if (false !== ($delete = array_search($jobId, $this->jobListData))) {
                         unset($this->jobListData[$delete]);
                     }
@@ -251,6 +251,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
                     }
                 }
             }
+            exit;
         }
 
         \Yii::info('Define jobs - end!', __METHOD__ . '(' . __LINE__ . ')');
@@ -284,7 +285,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
             while ($doJob) {
                 $doJob = $this->doThread($job);
 
-                YII_DEBUG && \Yii::trace(($job ? $job->toArray() : $job), __METHOD__ . '(' . __LINE__ . ')');
+                YII_DEBUG && \Yii::info(($job ? $job->toArray() : $job), __METHOD__ . '(' . __LINE__ . ')');
 
                 $doJob = $doJob && $job && $job->statusWork;
 
@@ -339,8 +340,8 @@ class FileDaemonController extends \vyants\daemon\DaemonController
         }
 
         // * Start file processing
-        if ($item = $this->component->sourceOne($job->name)) {
-            YII_DEBUG && \Yii::trace($item, __METHOD__ . '(' . __LINE__ . ')' . "\n" . '$item');
+        if ($item = $this->component->sourceOne(['name' => $job->name, 'remove' => true])) {
+            YII_DEBUG && \Yii::info(print_r($item->toArray(), true), __METHOD__ . '(' . __LINE__ . ') --- $item');
 
             if (false === $this->doFile($item, $job->group . '::' . $jobId)) {
                 ++$jobErrors;
@@ -391,7 +392,6 @@ class FileDaemonController extends \vyants\daemon\DaemonController
     protected function doFile($item, $table)
     {
         \Yii::info('Do file - start!', __METHOD__ . '(' . __LINE__ . ')');
-        YII_DEBUG && \Yii::trace($item, __METHOD__ . '(' . __LINE__ . ') --- $item');
 
         $return = false;
 
@@ -401,18 +401,20 @@ class FileDaemonController extends \vyants\daemon\DaemonController
             return $return;
         }
 
+        YII_DEBUG && \Yii::info(print_r($item->toArray(), true), __METHOD__ . '(' . __LINE__ . ') --- $item');
+
         if ($file = $this->component->getFileName($item->url)) {
 
-            YII_DEBUG && \Yii::trace($file, __METHOD__ . '(' . __LINE__ . ') --- $file');
+            YII_DEBUG && \Yii::info($file, __METHOD__ . '(' . __LINE__ . ') --- $file');
 
             $command = $this->commands[(int)$item->command];
 
             $fileName = md5($item->object_id . $file['file']);
-            $tmpName  = tempnam(\Yii::getAlias($this->config['directories']['source']));
+            $tmpName  = tempnam(\Yii::getAlias($this->config['directories']['source']), $this->configName);
 
             $path = $this->component->arcresultOne($fileName);
 
-            YII_DEBUG && \Yii::trace($path, __METHOD__ . '(' . __LINE__ . ') --- $path');
+            YII_DEBUG && \Yii::info($path, __METHOD__ . '(' . __LINE__ . ') --- $path');
 
             $this->itemData = [
                 'table'         => $table,
@@ -432,12 +434,12 @@ class FileDaemonController extends \vyants\daemon\DaemonController
 
             if (empty($path)) {
                 $getFile = $this->component->getFile($file['url'], $tmpName);
-                YII_DEBUG && \Yii::trace($getFile, __METHOD__ . '(' . __LINE__ . ') --- $getFile');
+                YII_DEBUG && \Yii::info($getFile, __METHOD__ . '(' . __LINE__ . ') --- $getFile');
             }
 
             $method = __FUNCTION__ . \yii\helpers\Inflector::id2camel($command);
 
-            YII_DEBUG && \Yii::trace($this->itemData, __METHOD__ . '(' . __LINE__ . ') $this->itemData');
+            YII_DEBUG && \Yii::info($this->itemData, __METHOD__ . '(' . __LINE__ . ') $this->itemData');
 
             if (method_exists($this, $method)) {
                 \Yii::info("Do file `{$command}` - start!", __METHOD__ . '(' . __LINE__ . ')' . "\n");
@@ -512,19 +514,19 @@ class FileDaemonController extends \vyants\daemon\DaemonController
         $make   = true;
 
         // Контроль наличия файла в архивной базе
-        if (false === empty($path)) {
+        if (false === empty($path) && (false === isset($this->config['archive']) || (bool)$this->config['archive'])) {
             $filePath = FileHelper::normalizePath(
                     \Yii::getAlias(
                         $this->itemData['directories']['target'] . $path
                     )
             );
 
-            YII_DEBUG && \Yii::trace('$filePath: ' . var_export($filePath, true), __METHOD__ . '(' . __LINE__ . ')');
+            YII_DEBUG && \Yii::info('$filePath: ' . var_export($filePath, true), __METHOD__ . '(' . __LINE__ . ')');
 
             $make = false;
             $file = $filePath . '.' . $this->itemData['extension'];
 
-            YII_DEBUG && \Yii::trace('is_file(' . $file . '): ' . var_export(is_file($file), true), __METHOD__ . '(' . __LINE__ . ')');
+            YII_DEBUG && \Yii::info('is_file(' . $file . '): ' . var_export(is_file($file), true), __METHOD__ . '(' . __LINE__ . ')');
 
             if (false === is_file($file)) {
                 $make = true;
@@ -534,7 +536,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
                 foreach ($this->itemData['targets'] as $target) {
                     $file = $filePath . $target['suffix'] . '.' . $this->itemData['extension'];
 
-                    YII_DEBUG && \Yii::trace('is_file(' . $file . '): ' . var_export(is_file($file), true), __METHOD__ . '(' . __LINE__ . ')');
+                    YII_DEBUG && \Yii::info('is_file(' . $file . '): ' . var_export(is_file($file), true), __METHOD__ . '(' . __LINE__ . ')');
 
                     if (false === is_file($file)) {
                         $make = true;
@@ -554,7 +556,7 @@ class FileDaemonController extends \vyants\daemon\DaemonController
 
                     $make = $this->component->getFile($this->itemData['url'], $this->itemData['source']);
 
-                    YII_DEBUG && \Yii::trace('$make: ' . var_export($make, true), __METHOD__ . '(' . __LINE__ . ')');
+                    YII_DEBUG && \Yii::info('$make: ' . var_export($make, true), __METHOD__ . '(' . __LINE__ . ')');
                 } else {
                     $return  = true;
                     $timeDir = dirname($path);
@@ -608,17 +610,19 @@ class FileDaemonController extends \vyants\daemon\DaemonController
                 'score'     => $this->itemData['score'],
             ];
 
-            YII_DEBUG && \Yii::trace('$itemDst: ' . var_export($itemDst, true), __METHOD__ . '(' . __LINE__ . ')');
+            YII_DEBUG && \Yii::info('$itemDst: ' . var_export($itemDst, true), __METHOD__ . '(' . __LINE__ . ')');
 
             $resultModel = $this->component->resultModel($itemDst);
             if ($resultModel->save() && $make) {
-                $data = [
-                    'name' => $itemDst['file_name'],
-                    'path' => $itemDst['time_dir'] . DIRECTORY_SEPARATOR . $itemDst['file_name'],
-                ];
+                if (false === isset($this->config['archive']) || (bool)$this->config['archive']) {
+                    $data = [
+                        'name' => $itemDst['file_name'],
+                        'path' => $itemDst['time_dir'] . DIRECTORY_SEPARATOR . $itemDst['file_name'],
+                    ];
 
-                $arcresultModel = $this->component->arcresultModel($data);
-                $arcresultModel->save();
+                    $arcresultModel = $this->component->arcresultModel($data);
+                    $arcresultModel->save();
+                }
             }
         }
 

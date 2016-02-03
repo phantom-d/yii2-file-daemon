@@ -118,7 +118,7 @@ class HashModel extends ActiveModel
 
         if ($model->checkTable()) {
             $db    = static::getDb();
-            $table = $this->tableName;
+            $table = $model->tableName;
             $query = [$table];
 
             if (empty($params)) {

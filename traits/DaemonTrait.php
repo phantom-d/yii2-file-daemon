@@ -4,28 +4,70 @@ namespace phantomd\filedaemon\traits;
 
 use yii\helpers\FileHelper;
 
+/**
+ * DaemonTrait provides a common implementation of the [[DaemonController]] interface.
+ *
+ * @method void restart() Force kill current process if present file kind of `restart-{daemon name}`
+ * @method void renewConnections() Force reconnect all connections to database for the component
+ * @method array getConfig() Get configuration for current daemon
+ * @method string getProcessName() Get name of current process
+ */
 trait DaemonTrait
 {
 
+    /**
+     * Name of current process
+     * @var string 
+     */
     protected $_shortName = '';
 
+    /**
+     * Array of configuration of daemon
+     * @var array
+     */
     protected $config = [];
 
+    /**
+     * Path to directory where placed configuration files
+     * @var string
+     */
     protected $configPath = '@app/config/daemons';
 
+    /**
+     * Array of extends methods for daemon
+     * @var array
+     */
     protected $commands = [];
 
+    /**
+     * Name of configuration
+     * @var string
+     */
     protected $configName = '';
 
+    /**
+     * FileProcessing
+     * @var phantomd\filedaemon\FileProcessing
+     */
     protected $component = null;
 
+    /**
+     * Alias of name for daemon controller
+     * @var string
+     */
     protected static $configAlias = '';
 
     public function init()
     {
-        parent::init();
+        if (empty($this->configName)) {
+            $this->configName = empty(static::$configAlias) ? '' : static::$configAlias;
+        }
 
-        $this->configName = empty(static::$configAlias) ? '' : static::$configAlias;
+        if (empty($this->configName)) {
+            $this->configName = $this->getConfigName($this->shortClassName(), ['Daemon']);
+        }
+
+        parent::init();
 
         $this->getConfig();
 
@@ -68,8 +110,38 @@ trait DaemonTrait
     }
 
     /**
-     * Получение настроек демона
+     * Get classname without namespace
+     *
+     * @return string
+     */
+    public function shortClassName()
+    {
+        return \yii\helpers\StringHelper::basename(get_called_class());
+    }
+
+    /**
+     * Get config name for daemon
      * 
+     * @param string $className Original class name
+     * @param array $replace Array strings for remove
+     * @return string
+     */
+    public function getConfigName($className = '', $replace = [])
+    {
+        $find = ['Controller'];
+
+        $className = empty($className) ? $this->shortClassName() : (string)$className;
+
+        if (false === empty($replace)) {
+            $find = array_merge($find, (array)$replace);
+        }
+
+        return \yii\helpers\Inflector::camel2id(str_replace($find, '', $className));
+    }
+
+    /**
+     * Получение настроек демона
+     *
      * @return array
      */
     protected function getConfig()

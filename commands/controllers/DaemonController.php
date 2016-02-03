@@ -82,12 +82,12 @@ abstract class DaemonController extends Controller
         parent::init();
 
         //set PCNTL signal handlers
-        pcntl_signal(SIGSYS, ['phantomd\filedaemon\commands\controllers', 'signalHandler']);
-        pcntl_signal(SIGTERM, ['phantomd\filedaemon\commands\controllers', 'signalHandler']);
-        pcntl_signal(SIGHUP, ['phantomd\filedaemon\commands\controllers', 'signalHandler']);
-        pcntl_signal(SIGUSR1, ['phantomd\filedaemon\commands\controllers', 'signalHandler']);
-        pcntl_signal(SIGUSR2, ['phantomd\filedaemon\commands\controllers', 'signalHandler']);
-        pcntl_signal(SIGCHLD, ['phantomd\filedaemon\commands\controllers', 'signalHandler']);
+        pcntl_signal(SIGSYS, [__CLASS__, 'signalHandler']);
+        pcntl_signal(SIGTERM, [__CLASS__, 'signalHandler']);
+        pcntl_signal(SIGHUP, [__CLASS__, 'signalHandler']);
+        pcntl_signal(SIGUSR1, [__CLASS__, 'signalHandler']);
+        pcntl_signal(SIGUSR2, [__CLASS__, 'signalHandler']);
+        pcntl_signal(SIGCHLD, [__CLASS__, 'signalHandler']);
 
         $this->shortName = $this->shortClassName();
         $this->setConfigName();
@@ -104,7 +104,7 @@ abstract class DaemonController extends Controller
         }
         $date        = date('Y-m-d');
         $logFileName = \Yii::getAlias($this->logDir)
-            . DIRECTORY_SEPARATOR . $this->getCommandNameBy($this->shortClassName(), 'Daemon')
+            . DIRECTORY_SEPARATOR . $this->getConfigName($this->shortClassName(), 'Daemon')
             . DIRECTORY_SEPARATOR . $date
             . DIRECTORY_SEPARATOR . $this->_shortName . '_' . $date . '.log';
 
@@ -113,8 +113,8 @@ abstract class DaemonController extends Controller
             'logFile' => $logFileName,
             'logVars' => [],
             'prefix'  => function() {
-                return '';
-            },
+            return '';
+        },
             'exportInterval' => 1,
             'enableRotation' => false,
             'except'         => [
@@ -451,12 +451,30 @@ abstract class DaemonController extends Controller
 
     /**
      * Get command for console running
-     * 
+     *
      * @param string $className Original class name
      * @param array $replace Array strings for remove
      * @return string
      */
     protected function getCommandNameBy($className = '', $replace = [])
+    {
+        $command = $this->getConfigName($className, $replace);
+
+        if (false === empty($this->daemonFolder)) {
+            $command = $this->daemonFolder . DIRECTORY_SEPARATOR . $command;
+        }
+
+        return $command . DIRECTORY_SEPARATOR . 'index';
+    }
+
+    /**
+     * Get config name for daemon
+     * 
+     * @param string $className Original class name
+     * @param array $replace Array strings for remove
+     * @return string
+     */
+    public function getConfigName($className = '', $replace = [])
     {
         $find = ['Controller'];
 
@@ -466,13 +484,7 @@ abstract class DaemonController extends Controller
             $find = array_merge($find, (array)$replace);
         }
 
-        $command = Inflector::camel2id(str_replace($find, '', $className));
-
-        if (false === empty($this->daemonFolder)) {
-            $command = $this->daemonFolder . DIRECTORY_SEPARATOR . $command;
-        }
-
-        return $command . DIRECTORY_SEPARATOR . 'index';
+        return Inflector::camel2id(str_replace($find, '', $className));
     }
 
     public function setConfigName()
@@ -510,7 +522,7 @@ abstract class DaemonController extends Controller
 
     /**
      * Rename process name
-     * 
+     *
      * @param string $prefix Prefix for the process name
      * @throws NotSupportedException
      */

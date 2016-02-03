@@ -313,7 +313,7 @@ class Curl
         if (YII_DEBUG) {
             $token = $this->createRequestLogToken($method, $url, $this->getOption(CURLOPT_HTTPHEADER));
             //setup error reporting and profiling
-            \Yii::trace("Start sending cURL-Request: {$method} {$url}\n", __METHOD__);
+            \Yii::info("Start sending cURL-Request: {$method} {$url}\n", __METHOD__);
             \Yii::beginProfile($token, __METHOD__);
         }
         /**

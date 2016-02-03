@@ -56,7 +56,7 @@ class Component
             if ($object instanceof FileProcessing) {
                 return $object;
             } else {
-                $message = "Component error: `{$class}` must be instance of `FileProcessing`!";
+                $message = "Component error: `{$class}` must be instance of class `FileProcessing`!";
                 \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
                 throw new InvalidParamException($message);
             }

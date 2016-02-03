@@ -8,27 +8,39 @@ use yii\httpclient\Client;
 
 /**
  * Компонент для работы
+ * 
  */
 class FileProcessing extends \yii\base\Component
 {
 
+    /**
+     * Database manager
+     * @var phantomd\filedaemon\db\Connection 
+     */
     protected static $adapter = null;
 
-    protected static $ftp = null;
-
+    /**
+     * List or one mime types for controll files
+     * @var mixed
+     */
     protected static $mimeType = null;
 
+    /**
+     * Array of configuration of daemon
+     * @var array
+     */
     public $config = null;
 
+    /**
+     * Options for the curl
+     * @var array
+     */
     public $curlOptions = [
-        CURLOPT_HEADER         => false,
-        CURLOPT_TIMEOUT        => 30,
         CURLOPT_USERAGENT      => 'Yii2 file daemon',
         CURLOPT_CONNECTTIMEOUT => 5,
         CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_SSL_VERIFYPEER => false,
     ];
 
     /**
@@ -45,10 +57,10 @@ class FileProcessing extends \yii\base\Component
         }
 
         $params = [
-            'class' => __NAMESPACE__ . '\db\Connection',
+            'class'  => __NAMESPACE__ . '\db\Connection',
             'params' => $this->config['db'],
         ];
-        
+
         static::$adapter = \Yii::createObject($params);
     }
 
@@ -176,6 +188,8 @@ class FileProcessing extends \yii\base\Component
                 $createJob = false;
                 $callback  = false;
 
+                YII_DEBUG && \Yii::info($source, __METHOD__ . '(' . __LINE__ . ') --- $source');
+
                 if ($job = $this->jobsOne(['name' => $source])) {
                     $callback = $job->callback;
                     if ($job::STATUS_COMPLETE === (int)$job->status) {
@@ -199,6 +213,9 @@ class FileProcessing extends \yii\base\Component
                         $createJob = true;
                     }
                 }
+
+                YII_DEBUG && \Yii::info($createJob, __METHOD__ . '(' . __LINE__ . ') --- $createJob');
+                YII_DEBUG && \Yii::info($callback, __METHOD__ . '(' . __LINE__ . ') --- $callback');
 
                 if ($createJob && $id = $this->addJob($source, $callback)) {
                     $jobsId[] = $id;
@@ -246,10 +263,11 @@ class FileProcessing extends \yii\base\Component
                 'name'     => $name,
                 'callback' => $callback,
                 'status'   => ($this->checkSorceAccess($name) ? $status : $jobsModel::STATUS_ERROR),
+                'complete' => 0,
                 'total'    => $total,
             ];
 
-            if ($job = $this->jobsOne(['name' => $name])) {
+            if ($job = $jobsModel->one(['name' => $name])) {
                 if ($job->statusWork) {
                     $params['status'] = $job->status;
                 }
@@ -292,7 +310,7 @@ class FileProcessing extends \yii\base\Component
      */
     public function getFileName($url)
     {
-        YII_DEBUG && \Yii::trace($url, __METHOD__ . '(' . __LINE__ . ')');
+        YII_DEBUG && \Yii::info($url, __METHOD__ . '(' . __LINE__ . ')');
 
         $return = false;
 
@@ -321,14 +339,13 @@ class FileProcessing extends \yii\base\Component
     {
         if (YII_DEBUG) {
             $args = func_get_args();
-            \Yii::trace('getFile $args: ' . var_export($args, true), __METHOD__ . '(' . __LINE__ . ')');
+            \Yii::info('getFile $args: ' . var_export($args, true), __METHOD__ . '(' . __LINE__ . ')');
         }
 
         $return = false;
 
         if ($file && $response = $this->sendRequest($url)) {
             \Yii::info("URL: {$url}", __METHOD__ . '(' . __LINE__ . ')');
-
             if ($this->checkContentType($response->info['content_type'])) {
                 if (file_put_contents($file, $response->response)) {
                     $return = $file;
@@ -405,7 +422,7 @@ class FileProcessing extends \yii\base\Component
         \Yii::info('Do transfer - start!', __METHOD__ . '(' . __LINE__ . ')');
         $return = false;
         if (false === empty($id)) {
-            $job = $this->jobOne($id);
+            $job = $this->jobsOne($id);
             if ($job) {
                 $name  = $job->group . '::' . $id;
                 $total = $this->resultCount($name);
@@ -471,7 +488,7 @@ class FileProcessing extends \yii\base\Component
      */
     public function makeFile($params = [])
     {
-        YII_DEBUG && \Yii::trace($params, __METHOD__ . '(' . __LINE__ . ')');
+        YII_DEBUG && \Yii::info($params, __METHOD__ . '(' . __LINE__ . ')');
 
         $return = false;
         if (empty($params)) {

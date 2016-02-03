@@ -5,7 +5,7 @@ namespace phantomd\filedaemon\commands\controllers;
 class WatcherDaemonController extends DaemonController
 {
 
-    use phantomd\filedaemon\traits\DaemonTrait;
+    use \phantomd\filedaemon\traits\DaemonTrait;
 
     /**
      * Daemons for check
