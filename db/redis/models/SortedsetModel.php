@@ -27,8 +27,8 @@ class SortedsetModel extends ActiveModel
             $db = static::getDb();
 
             $query  = [
-                $model->tableName, //
-                '-inf', '+inf', //
+                $model->tableName,
+                '-inf', '+inf',
             ];
             $result = $db->executeCommand('zcount', $query);
             if (false === is_null($result)) {
@@ -47,17 +47,10 @@ class SortedsetModel extends ActiveModel
      * @return mixed
      * @throws InvalidParamException
      */
-    public static function one($params = [])
+    public static function one($params = [], $remove = false)
     {
         $return = null;
-        $remove = false;
-
-        if (isset($params['remove'])) {
-            $remove = (bool)$params['remove'];
-            unset($params['remove']);
-        }
-
-        $model = static::model($params);
+        $model  = static::model($params);
 
         if ($model->checkTable()) {
             $db    = static::getDb();
@@ -110,7 +103,11 @@ class SortedsetModel extends ActiveModel
                 $query[] = $limit;
             }
 
+            YII_DEBUG && \Yii::info([$query], __METHOD__ . '(' . __LINE__ . ') --- $query');
+
             $result = $db->executeCommand('zrangebyscore', $query);
+
+            YII_DEBUG && \Yii::info([$result], __METHOD__ . '(' . __LINE__ . ') --- $result');
 
             if ($result) {
                 $key = 0;
@@ -231,6 +228,8 @@ class SortedsetModel extends ActiveModel
         }
 
         $changedAttributes = $this->getDirtyAttributes($attributeNames);
+        YII_DEBUG && \Yii::info([$changedAttributes], __METHOD__ . '(' . __LINE__ . ') --- $changedAttributes');
+
         if (empty($changedAttributes)) {
             $this->afterSave(false, $changedAttributes);
             return 0;
@@ -246,8 +245,13 @@ class SortedsetModel extends ActiveModel
             $score,
             \yii\helpers\Json::encode($values),
         ];
+
+        YII_DEBUG && \Yii::info([$query], __METHOD__ . '(' . __LINE__ . ') --- $query');
+
         // save pk in a findall pool
-        $db->executeCommand('zadd', $query);
+        $result = $db->executeCommand('zadd', $query);
+
+        YII_DEBUG && \Yii::info([$result], __METHOD__ . '(' . __LINE__ . ') --- $result');
 
         $values['score'] = $score;
 
@@ -300,13 +304,17 @@ class SortedsetModel extends ActiveModel
             $db = static::getDb();
 
             $query = [
-                $this->tableName($this),
+                $this->tableName,
                 $this->tableRename,
             ];
+
+            YII_DEBUG && \Yii::info([$query], __METHOD__ . '(' . __LINE__ . ') --- $query');
 
             if ($result = (bool)$db->executeCommand('renamenx', $query)) {
                 $this->tableName = $this->tableRename;
             }
+
+            YII_DEBUG && \Yii::info([$result], __METHOD__ . '(' . __LINE__ . ') --- $result');
 
             $this->tableRename = null;
             $this->afterRename();
@@ -328,11 +336,14 @@ class SortedsetModel extends ActiveModel
             unset($attributes['score']);
 
             $query = [
-                $this->tableName($this),
-                \yii\helpers\Json::encode($attributes),
+                $this->tableName,
             ];
 
+            YII_DEBUG && \Yii::info([$query], __METHOD__ . '(' . __LINE__ . ') --- $query');
+
             $result = (bool)$db->executeCommand('del', $query);
+
+            YII_DEBUG && \Yii::info([$result], __METHOD__ . '(' . __LINE__ . ') --- $result');
 
             $this->setOldAttributes(null);
             $this->afterRemove();

@@ -172,7 +172,7 @@ class ImageProcessing extends FileProcessing
      */
     public function makeFile($params = [])
     {
-        YII_DEBUG && \Yii::trace($params, __METHOD__ . '(' . __LINE__ . ')');
+        YII_DEBUG && \Yii::info($params, __METHOD__ . '(' . __LINE__ . ')');
 
         $return = false;
         if (empty($params)) {
@@ -222,7 +222,13 @@ class ImageProcessing extends FileProcessing
                     $image['crop'] = self::CROP_DEFAULT;
                 }
                 if ($crop) {
-                    $info = getimagesize($source);
+                    try {
+                        $info = getimagesize($source);
+                    } catch (\Exception $e) {
+                        \Yii::error(PHP_EOL . $e->getMessage() . ': ' . $source, __METHOD__ . '(' . __LINE__ . ')');
+                        return $return;
+                    }
+
                     if ($info) {
                         $crop = $info[0] / $info[1];
                     } else {
@@ -231,7 +237,7 @@ class ImageProcessing extends FileProcessing
                 }
 
                 if (false === empty($image['width']) || false === empty($image['height'])) {
-                    YII_DEBUG && \Yii::trace($image, __METHOD__ . '(' . __LINE__ . ')');
+                    YII_DEBUG && \Yii::info($image, __METHOD__ . '(' . __LINE__ . ')');
                     if (empty($image['width'])) {
                         if (false === empty($image['height'])) {
                             if ($crop && 1 > $crop) {
@@ -256,7 +262,7 @@ class ImageProcessing extends FileProcessing
                         }
                     }
 
-                    YII_DEBUG && \Yii::trace('$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
+                    YII_DEBUG && \Yii::info(PHP_EOL . '$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
 
                     if (empty($image['height'])) {
                         if (false === empty($image['width'])) {
@@ -281,7 +287,7 @@ class ImageProcessing extends FileProcessing
                             $resizeParams .= "{$image['height']}>' ";
                         }
                     }
-                    YII_DEBUG && \Yii::trace('$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
+                    YII_DEBUG && \Yii::info(PHP_EOL . '$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
                 }
 
                 if ($crop && false === empty($resizeParams)) {
@@ -301,8 +307,8 @@ class ImageProcessing extends FileProcessing
             }
         }
 
-        YII_DEBUG && \Yii::trace('$command: ' . $command, __METHOD__ . '(' . __LINE__ . ')');
-        YII_DEBUG && \Yii::trace($return, __METHOD__ . '(' . __LINE__ . ')');
+        YII_DEBUG && \Yii::info(PHP_EOL . '$command: ' . $command, __METHOD__ . '(' . __LINE__ . ')');
+        YII_DEBUG && \Yii::info($return, __METHOD__ . '(' . __LINE__ . ')');
 
         return $return;
     }

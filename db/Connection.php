@@ -37,17 +37,12 @@ class Connection extends Component
 
     public function __call($name, $params)
     {
-        if (false === empty($params)) {
-            $params = $params[0];
-        }
-
         $method = explode('-', Inflector::camel2id($name));
         $model  = array_shift($method);
         $method = lcfirst(Inflector::id2camel(implode('-', $method)));
         $class  = isset($this->models[$model]) ? $this->models[$model] : null;
 
         if ($class && method_exists($class, $method)) {
-            $params = $params ? [$params] : [];
             return call_user_func_array([$class, $method], $params);
         }
 

@@ -8,14 +8,14 @@ use yii\httpclient\Client;
 
 /**
  * Компонент для работы
- * 
+ *
  */
 class FileProcessing extends \yii\base\Component
 {
 
     /**
      * Database manager
-     * @var phantomd\filedaemon\db\Connection 
+     * @var phantomd\filedaemon\db\Connection
      */
     protected static $adapter = null;
 
@@ -52,7 +52,7 @@ class FileProcessing extends \yii\base\Component
 
         if (empty($this->config['db'])) {
             $message = 'Incorrect param `db`!';
-            \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
+            \Yii::error(PHP_EOL . $message, __METHOD__ . '(' . __LINE__ . ')');
             throw new InvalidParamException($message);
         }
 
@@ -91,7 +91,7 @@ class FileProcessing extends \yii\base\Component
 
     /**
      * Request file from url
-     * 
+     *
      * @param string $url Url for request
      * @param string $method HTTP request method
      * @param array $data
@@ -122,7 +122,7 @@ class FileProcessing extends \yii\base\Component
                             $error = \yii\web\Response::$httpStatuses[$webClient->code];
                         }
                     }
-                    $message = "Curl error:" . PHP_EOL
+                    $message = "\nCurl error:" . PHP_EOL
                         . "code: {$webClient->code}" . PHP_EOL
                         . "error: {$error}" . PHP_EOL
                         . "errNo: {$webClient->errNo}" . PHP_EOL
@@ -131,7 +131,7 @@ class FileProcessing extends \yii\base\Component
                 }
             }
         } catch (\Exception $e) {
-            \Yii::error("Error URL: {$url}.\n{$e->getMessage()}", __METHOD__ . '(' . __LINE__ . ')');
+            \Yii::error(PHP_EOL . "Error URL: {$url}.\n{$e->getMessage()}", __METHOD__ . '(' . __LINE__ . ')');
         }
         return $return;
     }
@@ -214,11 +214,17 @@ class FileProcessing extends \yii\base\Component
                     }
                 }
 
-                YII_DEBUG && \Yii::info($createJob, __METHOD__ . '(' . __LINE__ . ') --- $createJob');
-                YII_DEBUG && \Yii::info($callback, __METHOD__ . '(' . __LINE__ . ') --- $callback');
+                YII_DEBUG && \Yii::info([$createJob], __METHOD__ . '(' . __LINE__ . ') --- $createJob');
+                YII_DEBUG && \Yii::info([$callback], __METHOD__ . '(' . __LINE__ . ') --- $callback');
 
                 if ($createJob && $id = $this->addJob($source, $callback)) {
                     $jobsId[] = $id;
+                } else {
+                    if (empty($callback)) {
+                        if ($model = $this->sourceOne($source)) {
+                            $model->remove();
+                        }
+                    }
                 }
             }
 
@@ -252,6 +258,9 @@ class FileProcessing extends \yii\base\Component
         $return = false;
 
         if (empty($callback)) {
+            if ($source = $this->sourceOne($name)) {
+                $source->remove();
+            }
             return $return;
         }
 
@@ -310,12 +319,12 @@ class FileProcessing extends \yii\base\Component
      */
     public function getFileName($url)
     {
-        YII_DEBUG && \Yii::info($url, __METHOD__ . '(' . __LINE__ . ')');
+        YII_DEBUG && \Yii::info(PHP_EOL . $url, __METHOD__ . '(' . __LINE__ . ')');
 
         $return = false;
 
         if ($response = $this->sendRequest($url, 'head')) {
-            \Yii::info("URL: {$url}", __METHOD__ . '(' . __LINE__ . ')');
+            \Yii::info(PHP_EOL . "URL: {$url}", __METHOD__ . '(' . __LINE__ . ')');
 
             if ($this->checkContentType($response->info['content_type'])) {
                 $return = [
@@ -339,18 +348,18 @@ class FileProcessing extends \yii\base\Component
     {
         if (YII_DEBUG) {
             $args = func_get_args();
-            \Yii::info('getFile $args: ' . var_export($args, true), __METHOD__ . '(' . __LINE__ . ')');
+            \Yii::info(PHP_EOL . 'getFile $args: ' . var_export($args, true), __METHOD__ . '(' . __LINE__ . ')');
         }
 
         $return = false;
 
         if ($file && $response = $this->sendRequest($url)) {
-            \Yii::info("URL: {$url}", __METHOD__ . '(' . __LINE__ . ')');
+            \Yii::info(PHP_EOL . "URL: {$url}", __METHOD__ . '(' . __LINE__ . ')');
             if ($this->checkContentType($response->info['content_type'])) {
                 if (file_put_contents($file, $response->response)) {
                     $return = $file;
                 } else {
-                    \Yii::error("Could not save file: {$file}", __METHOD__ . '(' . __LINE__ . ')');
+                    \Yii::error(PHP_EOL . "Could not save file: {$file}", __METHOD__ . '(' . __LINE__ . ')');
                 }
             }
         }
@@ -359,7 +368,7 @@ class FileProcessing extends \yii\base\Component
 
     /**
      * Check mime type
-     * 
+     *
      * @param string $contentType Mime type
      * @return boolean
      */
@@ -383,7 +392,7 @@ class FileProcessing extends \yii\base\Component
         }
 
         if (false === $return) {
-            \Yii::error("Incorrect mime type: " . implode(',', (array)static::$mimeType), __METHOD__ . '(' . __LINE__ . ')');
+            \Yii::error(PHP_EOL . "Incorrect mime type: " . implode(',', (array)static::$mimeType), __METHOD__ . '(' . __LINE__ . ')');
         }
 
         return $return;
@@ -401,7 +410,11 @@ class FileProcessing extends \yii\base\Component
                 $id  = end($name);
                 if ($job = $this->jobsOne($id)) {
                     if ($job->status && false === $job->statusWork) {
-                        $this->transfer($id);
+                        try {
+                            $this->transfer($id);
+                        } catch (\Exception $e) {
+                            \Yii::error(PHP_EOL . $e->getMessage(), __METHOD__ . '(' . __LINE__ . ')');
+                        }
                     }
                 } else {
                     $model = $this->resultModel(implode($separator, $name));
@@ -409,27 +422,31 @@ class FileProcessing extends \yii\base\Component
                 }
             }
         }
+        YII_DEBUG && \Yii::info([$names], __METHOD__ . '(' . __LINE__ . ') --- $names');
     }
 
     /**
      * Send results processing tasks
      *
-     * @param string $id ID задачи
+     * @param string $id Task ID
      * @return boolean
      */
     public function transfer($id)
     {
-        \Yii::info('Do transfer - start!', __METHOD__ . '(' . __LINE__ . ')');
+        \Yii::info(PHP_EOL . 'Do transfer - start!', __METHOD__ . '(' . __LINE__ . ')');
         $return = false;
         if (false === empty($id)) {
             $job = $this->jobsOne($id);
             if ($job) {
+                YII_DEBUG && \Yii::info($job->toArray(), __METHOD__ . '(' . __LINE__ . ') --- $job');
                 $name  = $job->group . '::' . $id;
                 $total = $this->resultCount($name);
+                $empty = true;
                 $page  = 0;
 
                 while ($result = $this->resultAll($name, 100, $page++)) {
-                    $data = [];
+                    $empty = false;
+                    $data  = [];
                     foreach ($result as $model) {
                         $data[] = [
                             'command'   => $model->command,
@@ -439,30 +456,38 @@ class FileProcessing extends \yii\base\Component
                         ];
                     }
 
+                    YII_DEBUG && \Yii::info($data, __METHOD__ . '(' . __LINE__ . ') --- $data');
                     if ($data) {
                         if ($response = $this->sendRequest($job->callback, 'post', ['data' => $data])) {
-                            $message = "Send data successful!\n\t"
-                                . "table: {$name},\n\t"
-                                . "total: {$total},\n\t"
-                                . "sended: " . count($data) . ",\n\t"
+                            $message = "\n\tSend data successful!\n\t\t"
+                                . "table: {$name},\n\t\t"
+                                . "total: {$total},\n\t\t"
+                                . "sended: " . count($data) . ",\n\t\t"
                                 . "page: {$page}";
                             \Yii::info($message, __METHOD__ . '(' . __LINE__ . ')');
                             $return  = true;
                         }
                     }
                 }
+                if ($empty) {
+                    $return = true;
+                    \Yii::info(PHP_EOL . 'Empty table: ' . $name, __METHOD__ . '(' . __LINE__ . ')');
+                }
             }
         } else {
-            \Yii::error("Incorrect job ID: " . $id, __METHOD__ . '(' . __LINE__ . ')');
+            \Yii::error(PHP_EOL . 'Transfer error: Incorrect job ID: ' . $id, __METHOD__ . '(' . __LINE__ . ')');
         }
 
         if ($return) {
-            \Yii::info('Delete table: ' . $name, __METHOD__ . '(' . __LINE__ . ')');
-            $model = $this->resultModel($name);
-            $model->remove();
+            \Yii::info(PHP_EOL . 'Delete table: ' . $name, __METHOD__ . '(' . __LINE__ . ')');
+            if ($model = $this->resultModel($name)) {
+                \Yii::info($model->toArray(), __METHOD__ . '(' . __LINE__ . ') --- $model');
+                $model->remove();
+            }
+            $job->delete();
         }
 
-        \Yii::info('Do transfer - end!', __METHOD__ . '(' . __LINE__ . ')');
+        \Yii::info(PHP_EOL . 'Do transfer - end!', __METHOD__ . '(' . __LINE__ . ')');
         return $return;
     }
 
@@ -470,7 +495,7 @@ class FileProcessing extends \yii\base\Component
      * Save file
      *
      * @param array $params Массив в формате:
-     * 
+     *
      * ```php
      * $param = [
      *     'source'        => 'temp_file',
@@ -483,7 +508,7 @@ class FileProcessing extends \yii\base\Component
      *     'extension'     => 'pdf',
      * ];
      * ```
-     * 
+     *
      * @return boolean
      */
     public function makeFile($params = [])

@@ -83,7 +83,7 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
         throw new NotSupportedException();
     }
 
-    public static function one($params = [])
+    public static function one($params = [], $remove = false)
     {
         throw new NotSupportedException();
     }

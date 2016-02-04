@@ -123,7 +123,7 @@ abstract class DaemonController extends Controller
         ];
 
         if (YII_DEBUG) {
-            $config['levels'][] = 'trace';
+//            $config['levels'][] = 'trace';
             $config['levels'][] = 'profile';
         }
 

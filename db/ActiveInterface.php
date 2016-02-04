@@ -38,7 +38,7 @@ interface ActiveInterface
 
     public static function count($params = []);
 
-    public static function one($params = []);
+    public static function one($params = [], $remove = false);
 
     public static function all($params = [], $limit = 10, $page = 0);
 

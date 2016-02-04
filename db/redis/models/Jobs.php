@@ -37,7 +37,7 @@ class Jobs extends ActiveRecord
     public function rules()
     {
         return [
-            [['id', 'name', ], 'unique'],
+            [['id', 'name',], 'unique'],
             [['time_elapsed', 'time_per_item', 'time_to_left',], 'double'],
             [['pid', 'status', 'total', 'complete', 'errors', 'time_create', 'time_end',], 'integer'],
             [['name', 'id', 'callback', 'group'], 'string'],
@@ -80,7 +80,7 @@ class Jobs extends ActiveRecord
         if ('' === (string)$this->group) {
             $this->group = (string)explode('::', $this->name)[0];
         }
-        
+
         if (empty($this->time_create)) {
             $this->time_create = time();
         }
@@ -91,7 +91,7 @@ class Jobs extends ActiveRecord
 
         return parent::beforeSave($insert);
     }
-    
+
     public function afterFind()
     {
         if ('' === (string)$this->group) {
@@ -107,6 +107,19 @@ class Jobs extends ActiveRecord
     public function getStatusWork()
     {
         return in_array((int)$this->status, $this->allowWork);
+    }
+
+    public static function groups($params = [])
+    {
+        $groups = [];
+        $page   = 0;
+
+        while ($result = static::all($params, 100, $page++)) {
+            foreach ($result as $model) {
+                $groups[$model->group] = '';
+            }
+        }
+        return array_keys($groups);
     }
 
 }

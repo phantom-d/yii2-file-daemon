@@ -54,7 +54,7 @@ class HashModel extends ActiveModel
      * @throws InvalidParamException
      * @return mixed
      */
-    public static function one($params = '')
+    public static function one($params = '', $remove = false)
     {
         $return = null;
         $model  = static::model();

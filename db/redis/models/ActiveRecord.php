@@ -86,7 +86,7 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
         return $query;
     }
 
-    public static function one($params = [])
+    public static function one($params = [], $remove = false)
     {
         return static::getQuery($params, 1)->one();
     }
