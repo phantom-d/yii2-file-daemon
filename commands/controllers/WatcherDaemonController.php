@@ -20,12 +20,12 @@ class WatcherDaemonController extends DaemonController
 
     public $daemonFolder = '';
 
-    private $currentDate = null;
+    protected $currentDate = null;
 
     /**
      * @var string Короткое наименование для конфигурации
      */
-    private $_shortName = '';
+    protected $_shortName = '';
 
     public function init()
     {
