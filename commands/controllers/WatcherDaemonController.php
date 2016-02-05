@@ -2,10 +2,8 @@
 
 namespace phantomd\filedaemon\commands\controllers;
 
-class WatcherDaemonController extends DaemonController
+class WatcherDaemonController extends StreakDaemonController
 {
-
-    use \phantomd\filedaemon\traits\DaemonTrait;
 
     /**
      * Daemons for check
@@ -22,15 +20,11 @@ class WatcherDaemonController extends DaemonController
 
     protected $currentDate = null;
 
-    /**
-     * @var string Короткое наименование для конфигурации
-     */
-    protected $_shortName = '';
-
     public function init()
     {
         parent::init();
 
+        \Yii::info('Watcher daemon start.');
         $pidFile = \Yii::getAlias($this->pidDir) . DIRECTORY_SEPARATOR . $this->shortClassName();
         if (file_exists($pidFile)) {
             $pid = file_get_contents($pidFile);
@@ -40,7 +34,6 @@ class WatcherDaemonController extends DaemonController
         }
 
         $this->currentDate = strtotime(date('Y-m-d 00:00:00'));
-        $this->getConfig();
     }
 
     /**

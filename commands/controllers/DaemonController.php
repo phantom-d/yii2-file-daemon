@@ -109,12 +109,13 @@ abstract class DaemonController extends Controller
             . DIRECTORY_SEPARATOR . $this->_shortName . '_' . $date . '.log';
 
         $config          = [
+            'class'   => '\phantomd\filedaemon\components\FileTarget',
             'levels'  => ['error', 'warning', 'info'],
             'logFile' => $logFileName,
             'logVars' => [],
             'prefix'  => function() {
-            return '';
-        },
+                return '';
+            },
             'exportInterval' => 1,
             'enableRotation' => false,
             'except'         => [
@@ -127,7 +128,7 @@ abstract class DaemonController extends Controller
             $config['levels'][] = 'profile';
         }
 
-        $targets['daemon'] = new \phantomd\filedaemon\components\FileTarget($config);
+        $targets['daemon'] = \Yii::createObject($config);
 
         \Yii::$app->getLog()->targets = $targets;
         \Yii::$app->getLog()->init();

@@ -2,14 +2,10 @@
 
 namespace phantomd\filedaemon\commands\controllers;
 
-use yii\base\ErrorException;
 use yii\helpers\FileHelper;
-use app\models\Joblist;
 
-class FileDaemonController extends DaemonController
+class FileDaemonController extends StreakDaemonController
 {
-
-    use \phantomd\filedaemon\traits\DaemonTrait;
 
     /**
      * @var array Массив задач с установленным количеством потоков

@@ -67,8 +67,6 @@ trait DaemonTrait
             $this->configName = $this->getConfigName($this->shortClassName(), ['Daemon']);
         }
 
-        parent::init();
-
         $this->getConfig();
 
         if (false === empty($this->config['commands'])) {
@@ -80,6 +78,8 @@ trait DaemonTrait
         }
 
         $this->component = \phantomd\filedaemon\Component::init($this->config);
+
+        parent::init();
     }
 
     /**
