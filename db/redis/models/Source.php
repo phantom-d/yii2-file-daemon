@@ -17,9 +17,9 @@ class Source extends SortedsetModel
     {
         return [
             [['object_id', 'url',], 'required'],
-            [['command', 'object_id', 'url', 'image_id',], 'string'],
+            [['command', 'object_id', 'url', 'file_id',], 'string'],
             ['url', 'url', 'enableIDN' => true, 'message' => \Yii::t('yii', "{attribute} is not a valid URL!")],
-            [['command', 'object_id', 'image_id', 'score',], 'default', 'value' => 0],
+            [['command', 'object_id', 'file_id', 'score',], 'default', 'value' => 0],
             [['url',], 'default', 'value' => ''],
         ];
     }
@@ -33,7 +33,7 @@ class Source extends SortedsetModel
             'command',
             'object_id',
             'url',
-            'image_id',
+            'file_id',
             'score',
         ];
     }
@@ -47,7 +47,7 @@ class Source extends SortedsetModel
             'command'   => \Yii::t('app', 'Command'),
             'object_id' => \Yii::t('app', 'Object ID'),
             'url'       => \Yii::t('app', 'URL'),
-            'image_id'  => \Yii::t('app', 'Image ID'),
+            'file_id'  => \Yii::t('app', 'Image ID'),
             'score'     => \Yii::t('app', 'Sort'),
         ];
     }

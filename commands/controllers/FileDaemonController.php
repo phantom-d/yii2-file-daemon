@@ -85,26 +85,18 @@ class FileDaemonController extends StreakDaemonController
     /**
      * Принудительное завершение всех потоков
      */
-    protected function doRestart()
+    protected function beforeRestart()
     {
-        $fileRestart = FileHelper::normalizePath(
-                \Yii::getAlias(
-                    $this->configPath . DIRECTORY_SEPARATOR . "restart-{$this->configName}"
-                )
-        );
-        if (is_file($fileRestart)) {
-            \Yii::info(PHP_EOL . 'Do restart - start!', __METHOD__ . '(' . __LINE__ . ')');
-            foreach ($this->jobListData as $id) {
-                $keys = 0;
-                $job  = $this->component->jobsOne($id);
-                if ($job) {
-                    $job->status = $job::STATUS_RESTART;
-                    $job->save();
-                }
+        \Yii::info(PHP_EOL . 'Do restart - start!', __METHOD__ . '(' . __LINE__ . ')');
+        foreach ($this->jobListData as $id) {
+            $keys = 0;
+            $job  = $this->component->jobsOne($id);
+            if ($job) {
+                $job->status = $job::STATUS_RESTART;
+                $job->save();
             }
-            \Yii::info(PHP_EOL . 'Do restart - end!', __METHOD__ . '(' . __LINE__ . ')');
         }
-        $this->restart();
+        \Yii::info(PHP_EOL . 'Do restart - end!', __METHOD__ . '(' . __LINE__ . ')');
     }
 
     /**
@@ -125,12 +117,15 @@ class FileDaemonController extends StreakDaemonController
      */
     protected function defineJobs()
     {
-        $this->doRestart();
 
         \Yii::info(PHP_EOL . 'Define jobs - start!', __METHOD__ . '(' . __LINE__ . ')');
 
         $return = [];
 
+        if($this->restart()) {
+            return $return;
+        }
+        
         if ($this->component->addJobs()) {
             \Yii::info(PHP_EOL . 'Created new jobs.', __METHOD__ . '(' . __LINE__ . ')');
         }
@@ -469,7 +464,7 @@ class FileDaemonController extends StreakDaemonController
                 'file'          => $fileName,
                 'url'           => $file['url'],
                 'command'       => (int)$item->command,
-                'image_id'      => $item->image_id,
+                'file_id'       => $item->file_id,
                 'object_id'     => $item->object_id,
                 'score'         => $item->score,
                 'directories'   => $this->config['directories'],
@@ -646,7 +641,7 @@ class FileDaemonController extends StreakDaemonController
                 'name'      => $this->itemData['table'],
                 'command'   => (string)$this->itemData['command'],
                 'file_name' => $this->itemData['file'],
-                'image_id'  => $this->itemData['image_id'],
+                'file_id'   => $this->itemData['file_id'],
                 'object_id' => $this->itemData['object_id'],
                 'time_dir'  => $timeDir,
                 'score'     => $this->itemData['score'],

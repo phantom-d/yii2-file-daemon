@@ -53,6 +53,8 @@ class DaemonController extends Controller
             throw new NotFoundHttpException(\Yii::t('yii', 'Unknown daemon ID!'));
         }
 
+        $this->reloadComponent();
+
         return parent::runAction($id, $params);
     }
 
@@ -93,13 +95,13 @@ class DaemonController extends Controller
      *              'command'   => 0, // Стандартная обработка
      *              'object_id' => '772dab1a-4b4f-11e5-885d-feff819cdc9f',
      *              'url'       => 'http://www.bn.ru/images/photo/2015_08/201508252016081835551362b.jpg',
-     *              'image_id'  => 'a34c0e31-aaf8-43d9-a6ca-be9800dea5b7',
+     *              'file_id'  => 'a34c0e31-aaf8-43d9-a6ca-be9800dea5b7',
      *          ],
      *          [
      *              'command'   => 1, // Стандартная обработка + главная картинка
      *              'object_id' => 'c1b270c4-4b51-11e5-885d-feff819cdc9f',
      *              'url'       => 'http://www.bn.ru/images/photo/2015_08/201508252016121946987850b.jpg',
-     *              'image_id'  => '92d05f7c-c8fb-472f-9f9a-b052521924e1',
+     *              'file_id'  => '92d05f7c-c8fb-472f-9f9a-b052521924e1',
      *          ],
      *      ],
      *  ];

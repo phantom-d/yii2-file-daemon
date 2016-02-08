@@ -7,7 +7,9 @@ use yii\helpers\FileHelper;
 /**
  * DaemonTrait provides a common implementation of the [[DaemonController]] interface.
  *
+ * @property \phantomd\filedaemon\Component $component Component
  * @method void restart() Force kill current process if present file kind of `restart-{daemon name}`
+ * @method void reloadComponent() Force reload component
  * @method void renewConnections() Force reconnect all connections to database for the component
  * @method array getConfig() Get configuration for current daemon
  * @method string getProcessName() Get name of current process
@@ -34,6 +36,12 @@ trait DaemonTrait
     protected $configPath = '@app/config/daemons';
 
     /**
+     * File name configuration
+     * @var string
+     */
+    protected $configFile = 'daemons.php';
+
+    /**
      * Array of extends methods for daemon
      * @var array
      */
@@ -44,6 +52,8 @@ trait DaemonTrait
      * @var string
      */
     protected $configName = '';
+
+    protected $currentDate = null;
 
     /**
      * FileProcessing
@@ -77,9 +87,24 @@ trait DaemonTrait
             }
         }
 
-        $this->component = \phantomd\filedaemon\Component::init($this->config);
+        $this->currentDate = strtotime(date('Y-m-d 00:00:00'));
+
+        $this->reloadComponent();
 
         parent::init();
+    }
+
+    /**
+     * Reload processing componet
+     */
+    protected function reloadComponent()
+    {
+        $this->component = \phantomd\filedaemon\Component::init($this->config);
+    }
+
+    protected function beforeRestart()
+    {
+        
     }
 
     /**
@@ -87,6 +112,8 @@ trait DaemonTrait
      */
     protected function restart()
     {
+        $return = false;
+
         $fileRestart = FileHelper::normalizePath(
                 \Yii::getAlias(
                     $this->configPath . DIRECTORY_SEPARATOR . "restart-{$this->configName}"
@@ -94,9 +121,12 @@ trait DaemonTrait
         );
 
         if (is_file($fileRestart)) {
+            $this->beforeRestart();
             unlink($fileRestart);
-            posix_kill(getmypid(), SIGKILL);
+            static::stop();
+            $return = true;
         }
+        return $return;
     }
 
     /**
@@ -146,34 +176,28 @@ trait DaemonTrait
      */
     protected function getConfig()
     {
-        if (empty($this->config)) {
-            if (isset(\Yii::$app->params['daemons'])) {
-                $params = \Yii::$app->params['daemons'];
-            } else {
-                $fileConfig = FileHelper::normalizePath(
-                        \Yii::getAlias(
-                            $this->configPath . DIRECTORY_SEPARATOR . 'daemons.php'
-                        )
-                );
-                if (is_file($fileConfig)) {
-                    $params = include $fileConfig;
-                }
+        $fileConfig = FileHelper::normalizePath(
+                \Yii::getAlias(
+                    $this->configPath . DIRECTORY_SEPARATOR . $this->configFile
+                )
+        );
+        if (is_file($fileConfig)) {
+            $params = include $fileConfig;
+        }
+
+        if (isset($params[$this->configName])) {
+            if (isset($params[$this->configName]['multi-instance']) && isset($this->isMultiInstance)) {
+                $this->isMultiInstance = (bool)$params[$this->configName]['multi-instance'];
+            }
+            if (isset($params[$this->configName]['child-processes']) && isset($this->maxChildProcesses)) {
+                $this->maxChildProcesses = (int)$params[$this->configName]['child-processes'];
+            }
+            if (isset($params[$this->configName]['sleep']) && isset($this->sleep)) {
+                $this->sleep = (int)$params[$this->configName]['sleep'];
             }
 
-            if (isset($params[$this->configName])) {
-                if (isset($params[$this->configName]['multi-instance']) && isset($this->isMultiInstance)) {
-                    $this->isMultiInstance = (bool)$params[$this->configName]['multi-instance'];
-                }
-                if (isset($params[$this->configName]['child-processes']) && isset($this->maxChildProcesses)) {
-                    $this->maxChildProcesses = (int)$params[$this->configName]['child-processes'];
-                }
-                if (isset($params[$this->configName]['sleep']) && isset($this->sleep)) {
-                    $this->sleep = (int)$params[$this->configName]['sleep'];
-                }
-
-                $this->config     = $params[$this->configName];
-                $this->_shortName = $this->configName;
-            }
+            $this->config     = $params[$this->configName];
+            $this->_shortName = $this->configName;
         }
 
         return $this->config;

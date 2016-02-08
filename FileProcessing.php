@@ -452,7 +452,7 @@ class FileProcessing extends \yii\base\Component
                             'command'   => $model->command,
                             'object_id' => $model->object_id,
                             'url'       => $model->time_dir . DIRECTORY_SEPARATOR . $model->file_name,
-                            'image_id'  => $model->image_id,
+                            'file_id'  => $model->file_id,
                         ];
                     }
 

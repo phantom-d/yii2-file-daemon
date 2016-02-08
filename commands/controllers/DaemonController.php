@@ -114,8 +114,8 @@ abstract class DaemonController extends Controller
             'logFile' => $logFileName,
             'logVars' => [],
             'prefix'  => function() {
-                return '';
-            },
+            return '';
+        },
             'exportInterval' => 1,
             'enableRotation' => false,
             'except'         => [
@@ -258,7 +258,7 @@ abstract class DaemonController extends Controller
     {
         if (file_put_contents($this->getPidPath(), getmypid())) {
             $this->parentPID = getmypid();
-            \Yii::trace('Daemon ' . $this->shortName . ' pid ' . getmypid() . ' started.');
+            YII_DEBUG && \Yii::info('Daemon ' . $this->shortName . ' pid ' . getmypid() . ' started.');
             while (!self::$stopFlag && (memory_get_usage() < $this->memoryLimit)) {
                 $this->trigger(self::EVENT_BEFORE_ITERATION);
                 $this->renewConnections();
@@ -267,30 +267,30 @@ abstract class DaemonController extends Controller
                     while (($job = $this->defineJobExtractor($jobs)) !== null) {
                         //if no free workers, wait
                         if (count(static::$currentJobs) >= $this->maxChildProcesses) {
-                            \Yii::trace('Reached maximum number of child processes. Waiting...');
+                            YII_DEBUG && \Yii::info('Reached maximum number of child processes. Waiting...');
                             while (count(static::$currentJobs) >= $this->maxChildProcesses) {
                                 sleep(1);
                                 pcntl_signal_dispatch();
                             }
-                            \Yii::trace(
-                                'Free workers found: ' .
-                                ($this->maxChildProcesses - count(static::$currentJobs)) .
-                                ' worker(s). Delegate tasks.'
+                            YII_DEBUG && \Yii::info(
+                                    'Free workers found: ' .
+                                    ($this->maxChildProcesses - count(static::$currentJobs)) .
+                                    ' worker(s). Delegate tasks.'
                             );
                         }
                         pcntl_signal_dispatch();
                         $this->runDaemon($job);
+                        sleep(1);
                     }
-                } else {
-                    sleep($this->sleep);
                 }
+                sleep($this->sleep);
                 pcntl_signal_dispatch();
                 $this->trigger(self::EVENT_AFTER_ITERATION);
             }
-            if (memory_get_usage() < $this->memoryLimit) {
-                \Yii::trace('Daemon ' . $this->shortName . ' pid ' .
-                    getmypid() . ' used ' . memory_get_usage() . ' bytes on ' . $this->memoryLimit .
-                    ' bytes allowed by memory limit');
+            if (memory_get_usage() > $this->memoryLimit) {
+                YII_DEBUG && \Yii::info('Daemon ' . $this->shortName . ' pid ' .
+                        getmypid() . ' used ' . memory_get_usage() . ' bytes on ' . $this->memoryLimit .
+                        ' bytes allowed by memory limit');
             }
 
             \Yii::info('Daemon ' . $this->shortClassName() . ' pid ' . getmypid() . ' is stopped.');
@@ -405,7 +405,7 @@ abstract class DaemonController extends Controller
                     $message = Console::ansiFormat($message, [Console::FG_RED]);
                 }
             } else {
-                \Yii::trace($message);
+                YII_DEBUG && \Yii::info($message);
             }
             if (!$this->demonize) {
                 $this->writeConsole($message);

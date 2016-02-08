@@ -18,8 +18,6 @@ class WatcherDaemonController extends StreakDaemonController
 
     public $daemonFolder = '';
 
-    protected $currentDate = null;
-
     public function init()
     {
         parent::init();
@@ -32,8 +30,15 @@ class WatcherDaemonController extends StreakDaemonController
                 $this->halt(self::EXIT_CODE_ERROR, 'Another Watcher is already running.');
             }
         }
+    }
 
-        $this->currentDate = strtotime(date('Y-m-d 00:00:00'));
+    protected function beforeRestart()
+    {
+        foreach ($this->config['daemons'] as $key => $value) {
+            if ($value['enabled']) {
+                $this->config['daemons'][$key]['enabled'] = false;
+            }
+        }
     }
 
     /**
@@ -41,23 +46,22 @@ class WatcherDaemonController extends StreakDaemonController
      */
     protected function defineJobs()
     {
-        $this->restart();
-        sleep($this->sleep);
         $this->getConfig();
 
         if (empty($this->config['daemons'])) {
             return [];
         }
 
-        $currentDate = strtotime(date('Y-m-d 00:00:00'));
-        if ($currentDate > $this->currentDate) {
-            $this->currentDate = $currentDate;
-            foreach ($this->config['daemons'] as $key => $value) {
-                if ($value['enabled']) {
-                    $this->config['daemons'][$key]['enabled'] = false;
-                }
-            }
+        if (strtotime(date('Y-m-d 00:00:00')) > $this->currentDate) {
+            $fileRestart = FileHelper::normalizePath(
+                    \Yii::getAlias(
+                        $this->configPath . DIRECTORY_SEPARATOR . "restart-{$this->configName}"
+                    )
+            );
+            file_put_contents($fileRestart, '');
         }
+
+        $this->restart();
 
         return $this->config['daemons'];
     }
@@ -72,12 +76,12 @@ class WatcherDaemonController extends StreakDaemonController
     {
         $pidfile = \Yii::getAlias($this->pidDir) . DIRECTORY_SEPARATOR . $job['className'];
 
-        \Yii::trace('Check daemon ' . $job['className']);
+        YII_DEBUG && \Yii::info('Check daemon ' . $job['className']);
         if (file_exists($pidfile)) {
             $pid = file_get_contents($pidfile);
-            if ($this->isProcessRunning($pid)) {
+            if ($this->isProcessRunning($pid, $this->getConfigName($job['className'], ['Daemon']))) {
                 if ($job['enabled']) {
-                    \Yii::trace('Daemon ' . $job['className'] . ' running and working fine');
+                    YII_DEBUG && \Yii::info('Daemon ' . $job['className'] . ', PID: "' . $pid . '" running and working fine');
                     return true;
                 } else {
                     \Yii::warning('Daemon ' . $job['className'] . ' running, but disabled in config. Send SIGTERM signal.');
@@ -90,19 +94,24 @@ class WatcherDaemonController extends StreakDaemonController
                 }
             }
         }
-        \Yii::trace('Daemon pid not found.');
+
+        YII_DEBUG && \Yii::info('Daemon ' . $job['className'] . ' pid not found.');
+
         if ($job['enabled']) {
-            \Yii::trace('Try to run daemon ' . $job['className'] . '.');
+            YII_DEBUG && \Yii::info('Try to run daemon ' . $job['className'] . '.');
             $command_name = $this->getCommandNameBy($job['className']);
+
             //flush log before fork
             \Yii::$app->getLog()->getLogger()->flush(true);
+
             //run daemon
-            $pid          = pcntl_fork();
+            $pid = pcntl_fork();
+
             if ($pid == -1) {
                 $this->halt(self::EXIT_CODE_ERROR, 'pcntl_fork() returned error');
             } elseif (!$pid) {
                 $this->initLogger();
-                \Yii::trace('Daemon ' . $job['className'] . ' is running.');
+                YII_DEBUG && \Yii::info('Daemon ' . $job['className'] . ' is running.');
             } else {
                 $this->halt(
                     (0 === \Yii::$app->runAction("$command_name", ['demonize' => 1]) ? self::EXIT_CODE_NORMAL : self::EXIT_CODE_ERROR
@@ -110,7 +119,7 @@ class WatcherDaemonController extends StreakDaemonController
                 );
             }
         }
-        \Yii::trace('Daemon ' . $job['className'] . ' is checked.');
+        YII_DEBUG && \Yii::info('Daemon ' . $job['className'] . ' is checked.');
 
         return true;
     }
