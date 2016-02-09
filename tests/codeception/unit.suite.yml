@@ -1,0 +1,6 @@
+class_name: UnitTester
+modules:
+    enabled: [Yii2, Asserts, UnitHelper]
+    config:
+        Yii2:
+            configFile: 'codeception/config/console.php'

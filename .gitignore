@@ -38,3 +38,5 @@ composer.lock
 *.settings
 *.properties
 *.*~
+
+tests/_output/*
