@@ -6,6 +6,8 @@ use yii\base\NotSupportedException;
 
 /**
  * Class StreakDaemonController
+ *
+ * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class StreakDaemonController extends DaemonController
 {

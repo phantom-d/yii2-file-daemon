@@ -4,26 +4,26 @@ namespace phantomd\filedaemon\commands\controllers;
 
 use yii\helpers\FileHelper;
 
+/**
+ * Class FileDaemonController
+ *
+ * @author Anton Ermolovich <anton.ermolovich@gmail.com>
+ */
 class FileDaemonController extends StreakDaemonController
 {
 
     /**
-     * @var array Массив задач с установленным количеством потоков
+     * @var array Array threading jobs
      */
     protected $jobListData = [];
 
     /**
-     * @var string Короткое наименование для конфигурации
-     */
-    protected $_shortName = '';
-
-    /**
-     * @var array Массив с данными для обработки одной записи
+     * @var array Array source item for processing
      */
     protected $itemData = [];
 
     /**
-     * @var array Массив с данными для записи результата в базу данных
+     * @var array Result for save
      */
     protected $itemResult = [];
 
@@ -43,7 +43,7 @@ class FileDaemonController extends StreakDaemonController
     public $sleep = 60;
 
     /**
-     * Очистка текущего списка задач
+     * Clear current jobs threads
      */
     protected function checkJoblist()
     {
@@ -55,9 +55,9 @@ class FileDaemonController extends StreakDaemonController
     }
 
     /**
-     * Проверка наличия процесса
+     * Check job running
      *
-     * @param string|object $id
+     * @param string|object $id Job id or [[Jobs::model()]]
      * @return boolean
      */
     protected function checkJob($id)
@@ -83,7 +83,7 @@ class FileDaemonController extends StreakDaemonController
     }
 
     /**
-     * Принудительное завершение всех потоков
+     * Force restart daemon threads
      */
     protected function beforeRestart()
     {
@@ -100,20 +100,7 @@ class FileDaemonController extends StreakDaemonController
     }
 
     /**
-     * Получение задачи для выполнения
-     *
-     * @param array $jobs Массив задач
-     * @return string Одна задача
-     */
-    protected function defineJobExtractor(&$jobs)
-    {
-        return array_shift($jobs);
-    }
-
-    /**
-     * Получение списка задач
-     *
-     * @return array Массив задач с установленным количеством потоков
+     * @inheritdoc
      */
     protected function defineJobs()
     {
@@ -294,9 +281,7 @@ class FileDaemonController extends StreakDaemonController
     }
 
     /**
-     * Обработка поставленной задачи с ведением статуса выполнения
-     *
-     * @param string $jobId ID задачи
+     * @inheritdoc
      */
     protected function doJob($jobId)
     {
@@ -305,7 +290,7 @@ class FileDaemonController extends StreakDaemonController
         if ($job && $job->statusWork) {
             $job->pid = getmypid();
 
-            $this->_shortName = $this->_shortName . '_' . $job->name;
+            $this->shortName = $this->shortName . '_' . $job->name;
             $this->initLogger();
             $this->renameProcess();
 
@@ -352,9 +337,9 @@ class FileDaemonController extends StreakDaemonController
     }
 
     /**
-     * Демон потока
+     * Job thread
      *
-     * @param object $job Объект ActiveRecords - Joblist
+     * @param object $job [[Jobs::model()]]
      * @return true
      */
     protected function doThread($job)
@@ -420,10 +405,10 @@ class FileDaemonController extends StreakDaemonController
     }
 
     /**
-     * Обработка одной строки данных
+     * Source processing
      *
-     * @param mixed $item Данные для обработки
-     * @param string $table Наименование для записи результатов
+     * @param mixed $item Source data
+     * @param string $table Result name
      * @return bool
      */
     protected function doFile($item, $table)
@@ -497,7 +482,7 @@ class FileDaemonController extends StreakDaemonController
     }
 
     /**
-     * Добавление/удаление параметров изображений в список
+     * Add/remove data for processing
      */
     public function doMerge()
     {
@@ -544,9 +529,9 @@ class FileDaemonController extends StreakDaemonController
     }
 
     /**
-     * Обработка изображений
+     * File processing
      *
-     * @param string $path Данные из архивной базы в RedisDB
+     * @param string $path Path from archive database
      * @return boolean
      */
     protected function makeFile($path = null)

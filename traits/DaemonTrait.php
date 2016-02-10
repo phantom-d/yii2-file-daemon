@@ -5,68 +5,68 @@ namespace phantomd\filedaemon\traits;
 use yii\helpers\FileHelper;
 
 /**
- * DaemonTrait provides a common implementation of the [[DaemonController]] interface.
+ * Trait DaemonTrait provides a common implementation of the [[DaemonController]] interface.
  *
- * @property \phantomd\filedaemon\Component $component Component
+ * @property \phantomd\filedaemon\FileProcessing $component FileProcessing component
  * @method void restart() Force kill current process if present file kind of `restart-{daemon name}`
  * @method void reloadComponent() Force reload component
  * @method void renewConnections() Force reconnect all connections to database for the component
  * @method array getConfig() Get configuration for current daemon
  * @method string getProcessName() Get name of current process
+ *
+ * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 trait DaemonTrait
 {
 
     /**
-     * Name of current process
-     * @var string
+     * @var string Name of current process
      */
     protected $_shortName = '';
 
     /**
-     * Array of configuration of daemon
-     * @var array
+     * @var array Daemon configuration
      */
     protected $config = [];
 
     /**
-     * Path to directory where placed configuration files
-     * @var string
+     * @var string Path to directory where placed configuration files
      */
     protected $configPath = '@app/config/daemons';
 
     /**
-     * File name configuration
-     * @var string
+     * @var string File name configuration
      */
     protected $configFile = 'daemons.php';
 
     /**
-     * Array of extends methods for daemon
-     * @var array
+     * @var array Additional methods for daemon from configuration
      */
     protected $commands = [];
 
     /**
-     * Name of configuration
-     * @var string
+     * @var string Name of configuration
      */
     protected $configName = '';
 
+    /**
+     * @var int Current date in seconds
+     */
     protected $currentDate = null;
 
     /**
-     * FileProcessing
-     * @var phantomd\filedaemon\FileProcessing
+     * @var \phantomd\filedaemon\FileProcessing FileProcessing component
      */
     protected $component = null;
 
     /**
-     * Alias of name for daemon controller
-     * @var string
+     * @var string Alias of name for daemon controller
      */
     protected static $configAlias = '';
 
+    /**
+     * Init method
+     */
     public function init()
     {
         if (empty($this->configName)) {
@@ -102,13 +102,16 @@ trait DaemonTrait
         $this->component = \phantomd\filedaemon\Component::init($this->config);
     }
 
+    /**
+     * Event before restart daemon
+     */
     protected function beforeRestart()
     {
 
     }
 
     /**
-     * Завершение работы демона по команде
+     * Restart current daemon
      */
     protected function restart()
     {
@@ -130,7 +133,10 @@ trait DaemonTrait
     }
 
     /**
-     * Обновление соединений с БД для нового потока
+     * Renew database connections
+     *
+     * @throws \yii\base\InvalidConfigException
+     * @throws \yii\db\Exception
      */
     public function renewConnections()
     {
@@ -170,7 +176,7 @@ trait DaemonTrait
     }
 
     /**
-     * Получение настроек демона
+     * Get daemon configuration
      *
      * @return array
      */
@@ -201,11 +207,6 @@ trait DaemonTrait
         }
 
         return $this->config;
-    }
-
-    protected function getProcessName()
-    {
-        return $this->_shortName;
     }
 
 }

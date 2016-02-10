@@ -40,10 +40,9 @@ class SortedsetModel extends ActiveModel
     }
 
     /**
-     * Получение одной записи
+     * Get one row
      *
-     * @param string $params[source_id] Наименование ключа в RedisDB
-     * @param bool $params[remove] Удалять запись после получения.
+     * @param string $params[source_id] Key in RedisDB
      * @return mixed
      * @throws InvalidParamException
      */
@@ -76,11 +75,11 @@ class SortedsetModel extends ActiveModel
     }
 
     /**
-     * Получение списка записей
+     * Get rows
      *
-     * @param string $params['name'] Наименование ключа в RedisDB
-     * @param integer $params['limit'] Количество.
-     * @param integer $params['page'] Номер страницы.
+     * @param string $params['name'] Key in RedisDB
+     * @param integer $params['limit'] Limit
+     * @param integer $params['page'] Page
      * @throws InvalidParamException
      * @return mixed
      */
@@ -129,9 +128,9 @@ class SortedsetModel extends ActiveModel
     }
 
     /**
-     * Получения списка наименований задач
+     * Get names from database
      *
-     * @param string $params Regexp выборки наименований
+     * @param string $params Regexp condition
      * @return array
      */
     public static function names($params = [])
@@ -176,9 +175,9 @@ class SortedsetModel extends ActiveModel
     }
 
     /**
-     * Получение списка наименований групп задач
+     * Get groups
      *
-     * @param string $params[pattern] Regexp выборки наименований
+     * @param string $params[pattern] Regexp condition
      * @return array
      */
     public static function groups($params = [])

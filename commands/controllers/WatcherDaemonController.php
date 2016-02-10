@@ -2,22 +2,37 @@
 
 namespace phantomd\filedaemon\commands\controllers;
 
+/**
+ * Class WatcherDaemonController
+ *
+ * @author Vladimir Yants <vladimir.yants@gmail.com>
+ * @author Anton Ermolovich <anton.ermolovich@gmail.com>
+ */
 class WatcherDaemonController extends StreakDaemonController
 {
 
     /**
-     * Daemons for check
+     *
+     * ```php
      * [
-     *  ['className' => 'OneDaemonController', 'enabled' => true]
-     *  ...
-     *  ['className' => 'AnotherDaemonController', 'enabled' => false]
-     * ]
-     * @var $daemonsList Array
+     *      [
+     *          'className'  => 'OneDaemonController',
+     *          'enabled'    => true
+     *      ],
+     *      [
+     *          'className'  => 'AnotherDaemonController',
+     *          'enabled'    => false
+     *      ],
+     * ];
+     * ```
+     *
+     * @var array Daemons for check
      */
     public $daemonsList = [];
 
-    public $daemonFolder = '';
-
+    /**
+     * @inheritdoc
+     */
     public function init()
     {
         parent::init();
@@ -32,6 +47,9 @@ class WatcherDaemonController extends StreakDaemonController
         }
     }
 
+    /**
+     * @inheritdoc
+     */
     protected function beforeRestart()
     {
         foreach ($this->config['daemons'] as $key => $value) {
@@ -42,7 +60,7 @@ class WatcherDaemonController extends StreakDaemonController
     }
 
     /**
-     * @return array
+     * @inheritdoc
      */
     protected function defineJobs()
     {
@@ -67,10 +85,7 @@ class WatcherDaemonController extends StreakDaemonController
     }
 
     /**
-     * Job processing body
-     *
-     * @param $job array
-     * @return boolean
+     * @inheritdoc
      */
     protected function doJob($job)
     {

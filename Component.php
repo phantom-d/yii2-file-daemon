@@ -5,13 +5,19 @@ namespace phantomd\filedaemon;
 use yii\base\InvalidParamException;
 
 /**
- * Component
+ * Class Component
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class Component
 {
 
+    /**
+     * Non static initialization
+     *
+     * @param array $config
+     * @return \phantomd\filedaemon\FileProcessing Object
+     */
     public function __construct($config)
     {
         return static::init($config);
@@ -21,7 +27,7 @@ class Component
      * Initialization
      *
      * @param array $config
-     * @return object Object instanceof phantomd\filedaemon\FileProcessing
+     * @return \phantomd\filedaemon\FileProcessing Object
      * @throws InvalidParamException
      */
     public static function init($config)

@@ -8,7 +8,7 @@ use yii\helpers\Inflector;
 use yii\helpers\StringHelper;
 
 /**
- * DataModel
+ * Class ActiveModel
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
@@ -17,16 +17,29 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
 
     use \phantomd\filedaemon\traits\DbEventsTrait;
 
+    /**
+     * @var string Data type
+     */
     protected static $type = '';
 
-    protected static $db = null;
-
+    /**
+     * @var array Errors
+     */
     protected static $errors = [];
 
+    /**
+     * @var string New name
+     */
     protected $tableRename = null;
 
+    /**
+     * @var string Current name
+     */
     protected $tableName = null;
 
+    /**
+     * @inheritdoc
+     */
     public function init()
     {
         parent::init();
@@ -41,6 +54,9 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
         return \Yii::$app->get('filedaemon_' . Inflector::camel2id(StringHelper::basename(get_called_class()), '_'));
     }
 
+    /**
+     * @inheritdoc
+     */
     public static function model($params = [])
     {
         $tableName = static::tableName();
@@ -73,68 +89,105 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
         return Inflector::camel2id(StringHelper::basename(get_called_class()), '_');
     }
 
+    /**
+     * Get current name
+     * @return string
+     */
     public function getTableName()
     {
         return $this->tableName;
     }
 
+    /**
+     * @inheritdoc
+     */
     public static function count($params = [])
     {
         throw new NotSupportedException();
     }
 
+    /**
+     * @inheritdoc
+     */
     public static function one($params = [], $remove = false)
     {
         throw new NotSupportedException();
     }
 
+    /**
+     * @inheritdoc
+     */
     public static function all($params = [], $limit = 10, $page = 0)
     {
         throw new NotSupportedException();
     }
 
+    /**
+     * @inheritdoc
+     */
     public static function names($params = [])
     {
         throw new NotSupportedException();
     }
 
+    /**
+     * @inheritdoc
+     */
     public static function groups($params = [])
     {
         throw new NotSupportedException();
     }
 
+    /**
+     * @inheritdoc
+     */
     public function rename($params = [])
     {
         throw new NotSupportedException();
     }
 
+    /**
+     * @inheritdoc
+     */
     public function remove()
     {
         throw new NotSupportedException();
     }
 
+    /**
+     * @inheritdoc
+     */
     public function save($runValidation = true, $attributeNames = NULL)
     {
         return parent::save($runValidation, $attributeNames);
     }
 
+    /**
+     * @inheritdoc
+     */
     public function insert($runValidation = true, $attributes = null)
     {
         return parent::insert($runValidation, $attributes);
     }
 
+    /**
+     * @inheritdoc
+     */
     public static function find()
     {
         return Yii::createObject(static::className());
     }
 
+    /**
+     * @inheritdoc
+     */
     public static function primaryKey()
     {
         return parent::primaryKey();
     }
 
     /**
-     * Проверка наличия и соответствие типа ключа в RedisDB
+     * Check exist key in RedisDB
      *
      * @return boolean
      * @throws InvalidParamException

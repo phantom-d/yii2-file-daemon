@@ -6,13 +6,16 @@ use Yii;
 use yii\base\InvalidParamException;
 
 /**
- * HashModel
+ * Class HashModel
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class HashModel extends ActiveModel
 {
 
+    /**
+     * @inheritdoc
+     */
     protected static $type = 'hash';
 
     /**
@@ -48,9 +51,9 @@ class HashModel extends ActiveModel
     }
 
     /**
-     * Получение одной записи
+     * Get one row
      *
-     * @param string $params Наименование поля
+     * @param string $params Field name
      * @throws InvalidParamException
      * @return mixed
      */
@@ -100,10 +103,9 @@ class HashModel extends ActiveModel
     }
 
     /**
-     * Получение списка записей
+     * Get rows
      *
-     * @param string $params[source_id] Наименование ключа в RedisDB
-     * @param string $params[fields] Массив наименований полей
+     * @param string $params[fields] Fields
      * @throws InvalidParamException
      * @return mixed
      */

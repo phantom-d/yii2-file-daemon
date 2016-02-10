@@ -10,6 +10,9 @@ use yii\helpers\StringHelper;
 
 /**
  * Class DaemonController
+ *
+ * @author Vladimir Yants <vladimir.yants@gmail.com>
+ * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 abstract class DaemonController extends Controller
 {
@@ -23,55 +26,64 @@ abstract class DaemonController extends Controller
     const EVENT_AFTER_ITERATION = "event_after_iteration";
 
     /**
-     * @var $demonize boolean Run controller as Daemon
-     * @default false
+     * @var boolean Run controller as Daemon
      */
     public $demonize = false;
 
     /**
-     * @var $isMultiInstance boolean allow daemon create a few instances
+     * @var boolean Allow daemon create a few instances
      * @see $maxChildProcesses
-     * @default false
      */
     public $isMultiInstance = false;
 
     /**
-     * @var $parentPID int main procces pid
-     */
-    protected $parentPID;
-
-    /**
-     * @var $maxChildProcesses int max daemon instances
-     * @default 10
+     * @var int Max daemon instances
      */
     public $maxChildProcesses = 10;
 
     /**
-     * @var $currentJobs [] array of running instances
+     * @var string Daemon folder for console command
+     */
+    public $daemonFolder = '';
+
+    /**
+     * @var int Main procces pid
+     */
+    protected $parentPID;
+
+    /**
+     * @var array Array of running instances
      */
     protected static $currentJobs = [];
 
     /**
      * @var int Memory limit for daemon, must bee less than php memory_limit
-     * @default 32M
      */
     private $memoryLimit = 268435456;
 
     /**
-     * @var int used for soft daemon stop, set 1 to stop
+     * @var int Used for soft daemon stop, set 1 to stop
      */
     private static $stopFlag = 0;
 
     /**
-     * @var int Delay between task list checking
-     * @default 5sec
+     * @var int Delay between task list checking in seconds
      */
     protected $sleep = 5;
 
+    /**
+     * @var string Directory for save pid file
+     */
     protected $pidDir = "@runtime/daemons/pids";
 
+    /**
+     * @var string Directory for save pid file
+     */
     protected $logDir = "@runtime/daemons/logs";
 
+    /**
+     * @var string Short class name
+     */
     private $shortName = '';
 
     /**
@@ -114,8 +126,8 @@ abstract class DaemonController extends Controller
             'logFile' => $logFileName,
             'logVars' => [],
             'prefix'  => function () {
-                return '';
-            },
+            return '';
+        },
             'exportInterval' => 1,
             'enableRotation' => false,
             'except'         => [
@@ -137,7 +149,7 @@ abstract class DaemonController extends Controller
     /**
      * Daemon worker body
      *
-     * @param $job
+     * @param $job Job data
      * @return boolean
      */
     abstract protected function doJob($job);
@@ -188,6 +200,11 @@ abstract class DaemonController extends Controller
         return $this->loop();
     }
 
+    /**
+     * Process name
+     *
+     * @return string
+     */
     protected function getProcessName()
     {
         return $this->shortName;
@@ -218,7 +235,7 @@ abstract class DaemonController extends Controller
     /**
      * Get available options
      *
-     * @param string $actionID
+     * @param string $actionID Called action
      * @return array
      */
     public function options($actionID)
@@ -241,7 +258,8 @@ abstract class DaemonController extends Controller
 
     /**
      * Fetch one task from array of tasks
-     * @param Array
+     *
+     * @param array $jobs Jobs array
      * @return mixed one task
      */
     protected function defineJobExtractor(&$jobs)
@@ -252,9 +270,9 @@ abstract class DaemonController extends Controller
     /**
      * Main iterator
      *
-     * * @return boolean 0|1
+     * @return boolean 0|1
      */
-    final private function loop()
+    private function loop()
     {
         if (file_put_contents($this->getPidPath(), getmypid())) {
             $this->parentPID = getmypid();
@@ -317,9 +335,9 @@ abstract class DaemonController extends Controller
     /**
      * PCNTL signals handler
      *
-     * @param $signo
-     * @param null $pid
-     * @param null $status
+     * @param $signo Signal number
+     * @param int $pid Process ID
+     * @param int $status Status
      */
     final public function signalHandler($signo, $pid = null, $status = null)
     {
@@ -355,7 +373,7 @@ abstract class DaemonController extends Controller
     /**
      * Tasks runner
      *
-     * @param string $job
+     * @param string $job Job data
      * @return boolean
      */
     final public function runDaemon($job)
@@ -393,8 +411,8 @@ abstract class DaemonController extends Controller
     /**
      * Stop process and show or write message
      *
-     * @param $code int код завершения -1|0|1
-     * @param $message string сообщение
+     * @param int $code Code completion -1|0|1
+     * @param string $message Message
      */
     protected function halt($code, $message = null)
     {
@@ -417,7 +435,8 @@ abstract class DaemonController extends Controller
     }
 
     /**
-     * Renew connections
+     * Renew database connections
+     *
      * @throws \yii\base\InvalidConfigException
      * @throws \yii\db\Exception
      */
@@ -432,7 +451,7 @@ abstract class DaemonController extends Controller
     /**
      * Show message in console
      *
-     * @param $message
+     * @param $message Message
      */
     private function writeConsole($message)
     {
@@ -488,6 +507,9 @@ abstract class DaemonController extends Controller
         return Inflector::camel2id(str_replace($find, '', $className));
     }
 
+    /**
+     * Set name of configuration
+     */
     public function setConfigName()
     {
         if (empty($this->configName)) {
@@ -495,6 +517,11 @@ abstract class DaemonController extends Controller
         }
     }
 
+    /**
+     * Get full path to pid file
+     *
+     * @return string
+     */
     public function getPidPath()
     {
         $dir = \Yii::getAlias($this->pidDir);

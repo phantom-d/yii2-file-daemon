@@ -5,7 +5,7 @@ namespace phantomd\filedaemon\db\redis\models;
 use Yii;
 
 /**
- * Joblist
+ * Class Joblist
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
@@ -85,6 +85,9 @@ class Jobs extends ActiveRecord
         ];
     }
 
+    /**
+     * @inheritdoc
+     */
     public function beforeSave($insert)
     {
         if ('' === (string)$this->group) {
@@ -102,6 +105,9 @@ class Jobs extends ActiveRecord
         return parent::beforeSave($insert);
     }
 
+    /**
+     * @inheritdoc
+     */
     public function afterFind()
     {
         if ('' === (string)$this->group) {
@@ -110,7 +116,7 @@ class Jobs extends ActiveRecord
     }
 
     /**
-     * Получение статуса текущей задачи из списка разрешённых для работы статусов
+     * Get status work
      *
      * @return bool
      */
@@ -119,6 +125,9 @@ class Jobs extends ActiveRecord
         return in_array((int)$this->status, $this->allowWork);
     }
 
+    /**
+     * @inheritdoc
+     */
     public static function groups($params = [])
     {
         $groups = [];

@@ -7,33 +7,30 @@ use yii\helpers\FileHelper;
 use yii\httpclient\Client;
 
 /**
- * Компонент для работы
+ * FileProcessing
  *
+ * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class FileProcessing extends \yii\base\Component
 {
 
     /**
-     * Database manager
-     * @var phantomd\filedaemon\db\Connection
+     * @var phantomd\filedaemon\db\Connection Database manager
      */
     protected static $adapter = null;
 
     /**
-     * List or one mime types for controll files
-     * @var mixed
+     * @var mixed List or one mime types for controll files
      */
     protected static $mimeType = null;
 
     /**
-     * Array of configuration of daemon
-     * @var array
+     * @var array Daemon configuration
      */
     public $config = null;
 
     /**
-     * Options for the curl
-     * @var array
+     * @var array Options for the curl
      */
     public $curlOptions = [
         CURLOPT_USERAGENT      => 'Yii2 file daemon',
@@ -44,7 +41,7 @@ class FileProcessing extends \yii\base\Component
     ];
 
     /**
-     * @inheritdoc
+     * Initialization
      */
     public function init()
     {
@@ -65,7 +62,8 @@ class FileProcessing extends \yii\base\Component
     }
 
     /**
-     * @inheritdoc
+     * Calls the named method which is not a class method.
+     * Call this method directly from database manager [[FileProcessing::$adapter]]
      */
     public function __call($name, $params)
     {
@@ -74,8 +72,8 @@ class FileProcessing extends \yii\base\Component
 
     /**
      * Get object HttpClient
-     * @param string $url Url
-     * @return object
+     * 
+     * @return \phantomd\filedaemon\components\Curl Component
      */
     public function getWebClient()
     {
@@ -94,8 +92,8 @@ class FileProcessing extends \yii\base\Component
      *
      * @param string $url Url for request
      * @param string $method HTTP request method
-     * @param array $data
-     * @return bool|object
+     * @param array $data Data to send
+     * @return \phantomd\filedaemon\components\Curl
      */
     public function sendRequest($url, $method = 'get', $data = [])
     {
@@ -137,10 +135,10 @@ class FileProcessing extends \yii\base\Component
     }
 
     /**
-     * Запись данных для задач
+     * Add sources to database
      *
-     * @param string $name Наименование задачи
-     * @param array $params Массив данных
+     * @param string $name Job name
+     * @param array $params Data
      * @return boolean
      */
     public function addSource($name, $params)
@@ -175,7 +173,7 @@ class FileProcessing extends \yii\base\Component
     }
 
     /**
-     * Создание списка задач для работы в соответствии с имеющимися данными в источнике.
+     * Create jobs
      *
      * @return bool
      */
@@ -214,8 +212,10 @@ class FileProcessing extends \yii\base\Component
                     }
                 }
 
-                YII_DEBUG && \Yii::info([$createJob], __METHOD__ . '(' . __LINE__ . ') --- $createJob');
-                YII_DEBUG && \Yii::info([$callback], __METHOD__ . '(' . __LINE__ . ') --- $callback');
+                if (YII_DEBUG) {
+                    \Yii::info([$createJob], __METHOD__ . '(' . __LINE__ . ') --- $createJob');
+                    \Yii::info([$callback], __METHOD__ . '(' . __LINE__ . ') --- $callback');
+                }
 
                 if ($createJob && $id = $this->addJob($source, $callback)) {
                     $jobsId[] = $id;
@@ -245,12 +245,11 @@ class FileProcessing extends \yii\base\Component
     }
 
     /**
-     * Добавление задачи в Redis DB
+     * Create job
      *
-     * @param string $name Наименование ключа в RedisDB
-     * @param string $callback Ссылка для отправки результатов обработки
-     * @param string $db Исходная база данных.
-     * @param int $status Статус по умолчанию
+     * @param string $name Job name
+     * @param string $callback Callback url
+     * @param int $status Default status for new job
      * @return boolean
      */
     public function addJob($name, $callback, $status = 0)
@@ -295,9 +294,9 @@ class FileProcessing extends \yii\base\Component
     }
 
     /**
-     * Проверка доступности источника по URL для добавления в список задач.
+     * Check the availability of the source by url
      *
-     * @param string $name Наименование задачи
+     * @param string $name Job name
      * @return bool
      */
     public function checkSorceAccess($name)
@@ -311,11 +310,10 @@ class FileProcessing extends \yii\base\Component
     }
 
     /**
-     * Получение имени для файла по ссылке
+     * Make file name from url
      *
-     * @param string $url URL для скачивания
-     * @param string $type Тип файла.
-     * @return mixed Массив с существующей ссылкой и новым именем для файла | FALSE
+     * @param string $url Source url
+     * @return mixed The new file name, url and extension
      */
     public function getFileName($url)
     {
@@ -338,11 +336,11 @@ class FileProcessing extends \yii\base\Component
     }
 
     /**
-     * Получение файла по ссылке
+     * Download file from url
      *
-     * @param string $url Ссылка для получения файла
-     * @param string $file Полный путь для сохранения файла
-     * @return mixed Имя полный путь к полученному файлу | FALSE
+     * @param string $url Url
+     * @param string $file Full path file to save
+     * @return mixed Full path to downloaded file
      */
     public function getFile($url, $file)
     {
@@ -400,7 +398,7 @@ class FileProcessing extends \yii\base\Component
     }
 
     /**
-     * Sending the results of treatment are not active tasks
+     * Sending processing results from not active tasks
      */
     public function transferResults()
     {
@@ -427,7 +425,7 @@ class FileProcessing extends \yii\base\Component
     }
 
     /**
-     * Send results processing tasks
+     * Send processing results
      *
      * @param string $id Task ID
      * @return boolean
@@ -495,7 +493,7 @@ class FileProcessing extends \yii\base\Component
     /**
      * Save file
      *
-     * @param array $params Массив в формате:
+     * @param array $params Data for saving
      *
      * ```php
      * $param = [

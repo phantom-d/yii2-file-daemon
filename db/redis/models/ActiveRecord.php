@@ -9,7 +9,7 @@ use yii\helpers\StringHelper;
 use yii\helpers\ArrayHelper;
 
 /**
- * ActiveRecord
+ * Class ActiveRecord
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
@@ -24,6 +24,9 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
         return \Yii::$app->get('filedaemon_' . Inflector::camel2id(StringHelper::basename(get_called_class()), '_'));
     }
 
+    /**
+     * @inheritdoc
+     */
     public static function model($params = [])
     {
         $model = new static;
@@ -33,11 +36,23 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
         return $model;
     }
 
-    public static function count($params = [])
+    /**
+     * @inheritdoc
+     */
+    public static function count()
     {
         throw new NotSupportedException();
     }
 
+    /**
+     * Get ActiveQuery object
+     * 
+     * @param array $params Condition array
+     * @param int $limit Limit
+     * @param int $page Page
+     * 
+     * @return \yii\redis\ActiveQuery
+     */
     public static function getQuery($params = [], $limit = 0, $page = 0)
     {
         $query = static::find();
@@ -86,32 +101,50 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
         return $query;
     }
 
+    /**
+     * @inheritdoc
+     */
     public static function one($params = [], $remove = false)
     {
         return static::getQuery($params, 1)->one();
     }
 
+    /**
+     * @inheritdoc
+     */
     public static function all($params = [], $limit = 0, $page = 0)
     {
         return static::getQuery($params, $limit, $page)->all();
     }
 
-    public static function names($params = [])
+    /**
+     * @inheritdoc
+     */
+    public static function names()
     {
         throw new NotSupportedException();
     }
 
-    public static function groups($params = [])
+    /**
+     * @inheritdoc
+     */
+    public static function groups()
     {
         throw new NotSupportedException();
     }
 
+    /**
+     * @inheritdoc
+     */
     public function remove()
     {
         throw new NotSupportedException();
     }
 
-    public function rename($params = [])
+    /**
+     * @inheritdoc
+     */
+    public function rename()
     {
         throw new NotSupportedException();
     }

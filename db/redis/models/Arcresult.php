@@ -3,7 +3,7 @@
 namespace phantomd\filedaemon\db\redis\models;
 
 /**
- * Arcresult
+ * Class Arcresult
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

@@ -9,13 +9,18 @@ use yii\web\NotFoundHttpException;
 use yii\web\BadRequestHttpException;
 
 /**
- * Класс контроллера управления демоном обработки изображений посредством API
+ * Class DaemonController
+ *
+ * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class DaemonController extends Controller
 {
 
     use \phantomd\filedaemon\traits\DaemonTrait;
 
+    /**
+     * @inheritdoc
+     */
     public function behaviors()
     {
         $behaviors = parent::behaviors();
@@ -47,6 +52,9 @@ class DaemonController extends Controller
         return $behaviors;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function runAction($id, $params = [])
     {
         $params = \Yii::$app->request->get();
@@ -79,10 +87,7 @@ class DaemonController extends Controller
     }
 
     /**
-     * Метод не реализован
-     *
-     * @param string $id Наименование  демона, для которого отправляются данные
-     * @param string $key Ключ авторизации
+     * The method is not implemented
      */
     public function actionIndex()
     {
@@ -90,22 +95,21 @@ class DaemonController extends Controller
     }
 
     /**
-     * Добавление данных для демона обработки данных
+     * Create jobs from recived data
      *
      * ```php
-     * // Принимаемые параметры
      *  $_POST = [
-     *      'callback'   => 'http://www.bn.ru/../', // Ссылка для получения результатов обработки данных
+     *      'callback'   => 'http://www.bn.ru/../', // Callback url
      *      'name'       => 'www.bn.ru',
      *      'data'       => [
      *          [
-     *              'command'   => 0, // Стандартная обработка
+     *              'command'   => 0,
      *              'object_id' => '772dab1a-4b4f-11e5-885d-feff819cdc9f',
      *              'url'       => 'http://www.bn.ru/images/photo/2015_08/201508252016081835551362b.jpg',
      *              'file_id'  => 'a34c0e31-aaf8-43d9-a6ca-be9800dea5b7',
      *          ],
      *          [
-     *              'command'   => 1, // Стандартная обработка + главная картинка
+     *              'command'   => 1,
      *              'object_id' => 'c1b270c4-4b51-11e5-885d-feff819cdc9f',
      *              'url'       => 'http://www.bn.ru/images/photo/2015_08/201508252016121946987850b.jpg',
      *              'file_id'  => '92d05f7c-c8fb-472f-9f9a-b052521924e1',
@@ -115,9 +119,8 @@ class DaemonController extends Controller
 
      * ```
      *
-     * @param string $id Наименование  демона, для которого отправляются данные
-     * @param string $key Ключ авторизации
-     * @return string JSON результат добавления данных
+     * @param string $id Daemon id
+     * @return string JSON
      */
     public function actionCreate()
     {
@@ -182,6 +185,11 @@ class DaemonController extends Controller
         throw new NotFoundHttpException(\Yii::t('yii', 'Unknown image!'));
     }
 
+    /**
+     * Callback action for test
+     *
+     * @return json
+     */
     public function actionCallback()
     {
         return \Yii::$app->request->post();

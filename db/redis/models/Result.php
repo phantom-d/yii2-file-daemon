@@ -3,7 +3,7 @@
 namespace phantomd\filedaemon\db\redis\models;
 
 /**
- * Result
+ * Class Result
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

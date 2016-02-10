@@ -8,11 +8,9 @@ use yii\base\UnknownMethodException;
 use yii\base\InvalidParamException;
 
 /**
- * Connection
+ * Class Connection
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
- *
- * MYTODO: Реализовать универсальную инициализацию моделей для разных типов БД
  */
 class Connection extends Component
 {
@@ -35,6 +33,9 @@ class Connection extends Component
         $this->renewConnections();
     }
 
+    /**
+     * @inheritdoc
+     */
     public function __call($name, $params)
     {
         $method = explode('-', Inflector::camel2id($name));

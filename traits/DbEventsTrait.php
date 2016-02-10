@@ -4,6 +4,11 @@ namespace phantomd\filedaemon\traits;
 
 use yii\base\ModelEvent;
 
+/**
+ * Trait DbEventsTrait
+ *
+ * @author Anton Ermolovich <anton.ermolovich@gmail.com>
+ */
 trait DbEventsTrait
 {
 
@@ -88,4 +93,5 @@ trait DbEventsTrait
 
         return $event->isValid;
     }
+
 }

@@ -7,15 +7,23 @@ use yii\helpers\StringHelper;
 use yii\helpers\FileHelper;
 
 /**
- * Компонент для работы
+ * Class ImageProcessing
+ *
+ * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class ImageProcessing extends FileProcessing
 {
 
     const CROP_DEFAULT = 'center';
 
+    /**
+     * @inheritdoc
+     */
     protected static $mimeType = 'image';
 
+    /**
+     * @var array Variants of gravity for cropping image
+     */
     protected $garvity = [
         'northwest',
         'north',
@@ -29,9 +37,9 @@ class ImageProcessing extends FileProcessing
     ];
 
     /**
-     * Возвращае абсолютный путь к файлу по URI
+     * Get full path to image by Uri
      *
-     * @param string $url
+     * @param string $url Uri
      * @return string
      */
     public function getImageByUri($url)
@@ -132,10 +140,10 @@ class ImageProcessing extends FileProcessing
     }
 
     /**
-     * Конвертирование изображения в указанный формат
-     * (консольный GraphicsMagick)
+     * Conver image by params
+     * (console GraphicsMagick)
      *
-     * @param array $params Массив в формате:
+     * @param array $params Data for converting
      *
      * ```php
      * $param = [
@@ -319,11 +327,10 @@ class ImageProcessing extends FileProcessing
     }
 
     /**
-     * Сортировка массива параметров конвертирования изображений по размерам<br/>
-     * От большего к меньшему
+     * Sort parameters by sizes
      *
-     * @param mixed $targets Массив параметров
-     * @return array Отсортированный массив параметров
+     * @param mixed $targets Sizes
+     * @return array
      */
     public function sortTargets($targets)
     {

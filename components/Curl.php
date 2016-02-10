@@ -3,18 +3,6 @@
 /**
  * Yii2 cURL wrapper
  * With RESTful support.
- *
- * @category  Web-yii2
- * @package   yii2-curl
- * @author    Nils Gajsek <info@linslin.org>
- * @copyright 2013-2015 Nils Gajsek<info@linslin.org>
- * @license namespace linslin\yii2\curl;
-
-  use Yii;
-  http://opensource.org/licenses/MIT MIT Public
- * @version   1.0.4
- * @link      http://www.linslin.org
- *
  */
 
 namespace phantomd\filedaemon\components;
@@ -25,45 +13,51 @@ use yii\helpers\Json;
 use yii\web\HttpException;
 
 /**
- * cURL class
+ * Class Curl
+ *
+ * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class Curl
 {
 
     /**
-     * @var string
-     * Holds response data right after sending a request.
+     * @var string Holds response data right after sending a request.
      */
     public $response = null;
 
     /**
      * @var integer HTTP-Status Code
-     * This value will hold HTTP-Status Code. False if request was not successful.
      */
     public $code = null;
 
+    /**
+     * @var array Curl info after request
+     */
     public $info = null;
 
+    /**
+     * @var string Http error massge
+     */
     public $error = null;
 
+    /**
+     * @var int Error number
+     */
     public $errNo = null;
 
     /**
      * @var integer maximum symbols count of the request content, which should be taken to compose a
      * log and profile messages. Exceeding content will be truncated.
-     * @see createRequestLogToken()
      */
     public $contentLoggingMaxSize = 2000;
 
     /**
-     * @var array HTTP-Status Code
-     * Custom options holder
+     * @var array Custom options holder
      */
     private $_options = array();
 
     /**
-     * @var array default curl options
-     * Default curl options
+     * @var array Default curl options
      */
     private $_defaultOptions = array(
         CURLOPT_USERAGENT      => 'Yii2-Curl-Agent',
@@ -76,8 +70,8 @@ class Curl
     /**
      * Start performing GET-HTTP-Request
      *
-     * @param string  $url
-     * @param boolean $raw if response body contains JSON and should be decoded
+     * @param string  $url Url
+     * @param boolean $raw If response body contains JSON and should be decoded
      *
      * @return mixed response
      */
@@ -89,8 +83,7 @@ class Curl
     /**
      * Start performing HEAD-HTTP-Request
      *
-     * @param string $url
-     * @param string $body
+     * @param string $url Url
      *
      * @return mixed response
      */
@@ -102,8 +95,7 @@ class Curl
     /**
      * Start performing POST-HTTP-Request
      *
-     * @param string  $url
-     * @param string  $body
+     * @param string  $url Url
      * @param boolean $raw if response body contains JSON and should be decoded
      *
      * @return mixed response
@@ -116,8 +108,7 @@ class Curl
     /**
      * Start performing PUT-HTTP-Request
      *
-     * @param string  $url
-     * @param string  $body
+     * @param string  $url Url
      * @param boolean $raw if response body contains JSON and should be decoded
      *
      * @return mixed response
@@ -130,8 +121,7 @@ class Curl
     /**
      * Start performing DELETE-HTTP-Request
      *
-     * @param string  $url
-     * @param string  $body
+     * @param string  $url Url
      * @param boolean $raw if response body contains JSON and should be decoded
      *
      * @return mixed response
@@ -144,8 +134,8 @@ class Curl
     /**
      * Set curl option
      *
-     * @param string $key
-     * @param mixed  $value
+     * @param int $key Curl option code
+     * @param mixed  $value Option value
      *
      * @return $this
      */
@@ -161,7 +151,7 @@ class Curl
     /**
      * Set curl options
      *
-     * @param mixed  $options
+     * @param mixed  $options Array of curl options
      *
      * @return $this
      */
@@ -180,7 +170,7 @@ class Curl
     /**
      * Unset a single curl option
      *
-     * @param string $key
+     * @param int $key Curl option code
      *
      * @return $this
      */
@@ -258,10 +248,12 @@ class Curl
     /**
      * Composes the log/profiling message token for the given HTTP request parameters.
      * This method should be used by transports during request sending logging.
+     * 
      * @param string $method request method name.
      * @param string $url request URL.
      * @param array $headers request headers.
      * @param string $content request content.
+     * 
      * @return string log token.
      */
     public function createRequestLogToken($method, $url, $headers, $content = '')
@@ -279,9 +271,9 @@ class Curl
     /**
      * Performs HTTP request
      *
-     * @param string  $method
-     * @param string  $url
-     * @param boolean $raw if response body contains JSON and should be decoded -> helper.
+     * @param string  $method Http method
+     * @param string  $url Url
+     * @param boolean $raw If response body contains JSON and should be decoded -> helper.
      *
      * @throws Exception if request failed
      * @throws HttpException
