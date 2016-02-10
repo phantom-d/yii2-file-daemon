@@ -39,7 +39,7 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
     /**
      * @inheritdoc
      */
-    public static function count()
+    public static function count($params = [])
     {
         throw new NotSupportedException();
     }
@@ -120,7 +120,7 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
     /**
      * @inheritdoc
      */
-    public static function names()
+    public static function names($params = [])
     {
         throw new NotSupportedException();
     }
@@ -128,7 +128,15 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
     /**
      * @inheritdoc
      */
-    public static function groups()
+    public static function groups($params = [])
+    {
+        throw new NotSupportedException();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function rename($params = [])
     {
         throw new NotSupportedException();
     }
@@ -137,14 +145,6 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
      * @inheritdoc
      */
     public function remove()
-    {
-        throw new NotSupportedException();
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function rename()
     {
         throw new NotSupportedException();
     }
