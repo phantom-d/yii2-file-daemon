@@ -9,9 +9,9 @@ use yii\base\InvalidParamException;
 
 /**
  * Connection
- * 
+ *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
- * 
+ *
  * MYTODO: Реализовать универсальную инициализацию моделей для разных типов БД
  */
 class Connection extends Component

@@ -30,7 +30,7 @@ class ImageProcessing extends FileProcessing
 
     /**
      * Возвращае абсолютный путь к файлу по URI
-     * 
+     *
      * @param string $url
      * @return string
      */
@@ -136,7 +136,7 @@ class ImageProcessing extends FileProcessing
      * (консольный GraphicsMagick)
      *
      * @param array $params Массив в формате:
-     * 
+     *
      * ```php
      * $param = [
      *     'source'        => 'test_file',
@@ -167,7 +167,7 @@ class ImageProcessing extends FileProcessing
      *     ],
      * ];
      * ```
-     * 
+     *
      * @return boolean
      */
     public function makeFile($params = [])
@@ -316,7 +316,7 @@ class ImageProcessing extends FileProcessing
     /**
      * Сортировка массива параметров конвертирования изображений по размерам<br/>
      * От большего к меньшему
-     * 
+     *
      * @param mixed $targets Массив параметров
      * @return array Отсортированный массив параметров
      */

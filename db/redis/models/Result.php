@@ -4,7 +4,7 @@ namespace phantomd\filedaemon\db\redis\models;
 
 /**
  * Result
- * 
+ *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class Result extends SortedsetModel

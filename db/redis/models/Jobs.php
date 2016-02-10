@@ -6,7 +6,7 @@ use Yii;
 
 /**
  * Joblist
- * 
+ *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class Jobs extends ActiveRecord

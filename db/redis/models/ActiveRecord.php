@@ -10,7 +10,7 @@ use yii\helpers\ArrayHelper;
 
 /**
  * ActiveRecord
- * 
+ *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaemon\db\ActiveInterface

@@ -7,7 +7,7 @@ use yii\base\InvalidParamException;
 
 /**
  * HashModel
- * 
+ *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class HashModel extends ActiveModel
@@ -101,7 +101,7 @@ class HashModel extends ActiveModel
 
     /**
      * Получение списка записей
-     * 
+     *
      * @param string $params[source_id] Наименование ключа в RedisDB
      * @param string $params[fields] Массив наименований полей
      * @throws InvalidParamException

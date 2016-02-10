@@ -4,7 +4,7 @@ namespace phantomd\filedaemon\db\redis\models;
 
 /**
  * Arcresult
- * 
+ *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class Arcresult extends HashModel

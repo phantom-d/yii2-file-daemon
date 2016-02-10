@@ -4,7 +4,7 @@ namespace phantomd\filedaemon\db;
 
 /**
  * DataInterface
- * 
+ *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 interface ActiveInterface

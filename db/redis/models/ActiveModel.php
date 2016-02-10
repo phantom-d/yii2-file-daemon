@@ -9,7 +9,7 @@ use yii\helpers\StringHelper;
 
 /**
  * DataModel
- * 
+ *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaemon\db\ActiveInterface
@@ -57,7 +57,7 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
             }
         }
         $params['class'] = static::className();
-        
+
         $model = \Yii::createObject($params);
 
         $model->tableName = $tableName;
@@ -135,7 +135,7 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
 
     /**
      * Проверка наличия и соответствие типа ключа в RedisDB
-     * 
+     *
      * @return boolean
      * @throws InvalidParamException
      */

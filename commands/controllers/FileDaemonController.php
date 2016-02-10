@@ -56,7 +56,7 @@ class FileDaemonController extends StreakDaemonController
 
     /**
      * Проверка наличия процесса
-     * 
+     *
      * @param string|object $id
      * @return boolean
      */
@@ -125,7 +125,7 @@ class FileDaemonController extends StreakDaemonController
         if($this->restart()) {
             return $return;
         }
-        
+
         if ($this->component->addJobs()) {
             \Yii::info(PHP_EOL . 'Created new jobs.', __METHOD__ . '(' . __LINE__ . ')');
         }

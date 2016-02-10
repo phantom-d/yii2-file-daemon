@@ -6,7 +6,7 @@ use yii\base\InvalidParamException;
 
 /**
  * Component
- * 
+ *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class Component
@@ -19,7 +19,7 @@ class Component
 
     /**
      * Initialization
-     * 
+     *
      * @param array $config
      * @return object Object instanceof phantomd\filedaemon\FileProcessing
      * @throws InvalidParamException

@@ -56,7 +56,7 @@ class FileTarget extends \yii\log\FileTarget
                 $traces[] = "in {$trace['file']}:{$trace['line']}";
             }
         }
-        
+
         $prefix = $this->getMessagePrefix($message);
         return date('Y-m-d H:i:s', $timestamp) . '.' . (strpos($timestamp, '.') ? str_pad(explode('.', (string)$timestamp)[1], 10, '0') : '0000000000')
             . " {$prefix}[$level][$category] $text"

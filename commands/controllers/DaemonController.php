@@ -470,7 +470,7 @@ abstract class DaemonController extends Controller
 
     /**
      * Get config name for daemon
-     * 
+     *
      * @param string $className Original class name
      * @param array $replace Array strings for remove
      * @return string

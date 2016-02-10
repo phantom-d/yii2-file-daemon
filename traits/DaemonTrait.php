@@ -19,7 +19,7 @@ trait DaemonTrait
 
     /**
      * Name of current process
-     * @var string 
+     * @var string
      */
     protected $_shortName = '';
 
@@ -104,7 +104,7 @@ trait DaemonTrait
 
     protected function beforeRestart()
     {
-        
+
     }
 
     /**
@@ -151,7 +151,7 @@ trait DaemonTrait
 
     /**
      * Get config name for daemon
-     * 
+     *
      * @param string $className Original class name
      * @param array $replace Array strings for remove
      * @return string
