@@ -296,10 +296,13 @@ class Curl
             $this->setOption(CURLOPT_NOBODY, true);
             $this->unsetOption(CURLOPT_WRITEFUNCTION);
         } else {
-            $this->setOption(CURLOPT_WRITEFUNCTION, function ($curl, $data) use (&$body) {
-                $body .= $data;
-                return mb_strlen($data, '8bit');
-            });
+            $this->setOption(
+                CURLOPT_WRITEFUNCTION, //
+                function ($curl, $data) use (&$body) {
+                    $body .= $data;
+                    return mb_strlen($data, '8bit');
+                }
+            );
         }
 
         if (YII_DEBUG) {
