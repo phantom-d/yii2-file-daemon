@@ -56,9 +56,10 @@ class SortedsetModel extends ActiveModel
             $db    = static::getDb();
             $table = $model->tableName;
 
-            $script = "local element = redis.pcall('ZRANGEBYSCORE', '{$table}', '-inf', '+inf', 'WITHSCORES', 'LIMIT' , '0' , '1')"
-                . ((bool)$remove ? " redis.pcall('ZREM', '{$table}', element[1])" : '')
-                . " return element";
+            $script = "local element = redis.pcall('ZRANGEBYSCORE', "
+                . "'{$table}', '-inf', '+inf', 'WITHSCORES', 'LIMIT' , '0' , '1') "
+                . ((bool)$remove ? "redis.pcall('ZREM', '{$table}', element[1]) " : '')
+                . "return element";
 
             $result = $db->executeCommand('eval', [$script, 0]);
             if ($result) {
@@ -142,8 +143,12 @@ class SortedsetModel extends ActiveModel
         $separator = '';
 
         if (is_array($params)) {
-            $pattern   = (isset($params['pattern']) && (string)$params['pattern']) ? (string)$params['pattern'] : $pattern;
-            $separator = (isset($params['separator']) && (string)$params['separator']) ? (string)$params['separator'] : $separator;
+            if (isset($params['pattern']) && (string)$params['pattern']) {
+                $pattern   = (string)$params['pattern'];
+            }
+            if (isset($params['separator']) && (string)$params['separator']) {
+                $separator = (string)$params['separator'];
+            }
         } else {
             $pattern = ('' === (string)$params) ? $pattern : (string)$params;
         }
@@ -192,7 +197,7 @@ class SortedsetModel extends ActiveModel
     /**
      * @inheritdoc
      */
-    public function save($runValidation = true, $attributeNames = NULL)
+    public function save($runValidation = true, $attributeNames = null)
     {
         if ($this->getIsNewRecord()) {
             return $this->insert($runValidation, $attributeNames);
@@ -204,7 +209,7 @@ class SortedsetModel extends ActiveModel
     /**
      * @inheritdoc
      */
-    public function update($runValidation = true, $attributeNames = NULL)
+    public function update($runValidation = true, $attributeNames = null)
     {
         if ($this->getDirtyAttributes($attributeNames)) {
             $model  = clone $this;

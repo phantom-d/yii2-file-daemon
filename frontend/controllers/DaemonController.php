@@ -18,22 +18,29 @@ class DaemonController extends Controller
 
     public function behaviors()
     {
-        $behaviors                      = parent::behaviors();
+        $behaviors = parent::behaviors();
+
         $behaviors['contentNegotiator'] = [
             'class'   => 'yii\filters\ContentNegotiator',
             'formats' => [
                 'application/json' => Response::FORMAT_JSON,
             ],
         ];
-        $behaviors['AccessControl']     = [
+
+        $rulesIps = [];
+        if (empty(\Yii::$app->params['secret']['allowIPs'])) {
+            $rulesIps = \Yii::$app->params['secret']['allowIPs'];
+        }
+
+        $behaviors['AccessControl'] = [
             'class'        => 'yii\filters\AccessControl',
             'denyCallback' => function ($rule, $action) {
                 throw new ForbiddenHttpException(\Yii::t('yii', 'You are not allowed to perform this action.'));
             },
-            'rules'                         => [
+            'rules'                     => [
                 [
                     'allow' => true,
-                    'ips'   => empty(\Yii::$app->params['secret']['allowIPs']) ? [] : \Yii::$app->params['secret']['allowIPs'],
+                    'ips'   => $rulesIps,
                 ],
             ]
         ];

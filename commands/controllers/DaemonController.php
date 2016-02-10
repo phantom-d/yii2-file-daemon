@@ -113,9 +113,9 @@ abstract class DaemonController extends Controller
             'levels'  => ['error', 'warning', 'info'],
             'logFile' => $logFileName,
             'logVars' => [],
-            'prefix'  => function() {
-            return '';
-        },
+            'prefix'  => function () {
+                return '';
+            },
             'exportInterval' => 1,
             'enableRotation' => false,
             'except'         => [
@@ -321,7 +321,7 @@ abstract class DaemonController extends Controller
      * @param null $pid
      * @param null $status
      */
-    final function signalHandler($signo, $pid = null, $status = null)
+    final public function signalHandler($signo, $pid = null, $status = null)
     {
         switch ($signo) {
             case SIGSYS:

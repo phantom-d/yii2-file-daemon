@@ -225,7 +225,7 @@ class ImageProcessing extends FileProcessing
                     try {
                         $info = getimagesize($source);
                     } catch (\Exception $e) {
-                        \Yii::error(PHP_EOL . $e->getMessage() . ': ' . $source, __METHOD__ . '(' . __LINE__ . ')');
+                        \Yii::error($e->getMessage() . ': ' . $source, __METHOD__ . '(' . __LINE__ . ')');
                         return $return;
                     }
 
@@ -262,7 +262,9 @@ class ImageProcessing extends FileProcessing
                         }
                     }
 
-                    YII_DEBUG && \Yii::info(PHP_EOL . '$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
+                    if (YII_DEBUG) {
+                        \Yii::info('$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
+                    }
 
                     if (empty($image['height'])) {
                         if (false === empty($image['width'])) {
@@ -287,11 +289,12 @@ class ImageProcessing extends FileProcessing
                             $resizeParams .= "{$image['height']}>' ";
                         }
                     }
-                    YII_DEBUG && \Yii::info(PHP_EOL . '$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
+                    YII_DEBUG && \Yii::info('$resizeParams: ' . $resizeParams, __METHOD__ . '(' . __LINE__ . ')');
                 }
 
                 if ($crop && false === empty($resizeParams)) {
-                    $resizeParams .= " -gravity {$image['crop']} -crop {$image['width']}x{$image['height']}+0+0 +repage ";
+                    $resizeParams .= " -gravity {$image['crop']} "
+                        . "-crop {$image['width']}x{$image['height']}+0+0 +repage ";
                 }
                 $command .= $resizeParams;
 
@@ -307,8 +310,10 @@ class ImageProcessing extends FileProcessing
             }
         }
 
-        YII_DEBUG && \Yii::info(PHP_EOL . '$command: ' . $command, __METHOD__ . '(' . __LINE__ . ')');
-        YII_DEBUG && \Yii::info($return, __METHOD__ . '(' . __LINE__ . ')');
+        if (YII_DEBUG) {
+            \Yii::info(PHP_EOL . '$command: ' . $command, __METHOD__ . '(' . __LINE__ . ')');
+            \Yii::info($return, __METHOD__ . '(' . __LINE__ . ')');
+        }
 
         return $return;
     }

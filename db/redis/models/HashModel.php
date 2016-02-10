@@ -179,7 +179,7 @@ class HashModel extends ActiveModel
     /**
      * @inheritdoc
      */
-    public function save($runValidation = true, $attributeNames = NULL)
+    public function save($runValidation = true, $attributeNames = null)
     {
         if ($runValidation && !$this->validate($attributeNames)) {
             return false;
@@ -216,7 +216,7 @@ class HashModel extends ActiveModel
     /**
      * @inheritdoc
      */
-    public function update($runValidation = true, $attributeNames = NULL)
+    public function update($runValidation = true, $attributeNames = null)
     {
         return $this->save($runValidation, $attributeNames);
     }

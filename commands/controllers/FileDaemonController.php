@@ -87,7 +87,7 @@ class FileDaemonController extends StreakDaemonController
      */
     protected function beforeRestart()
     {
-        \Yii::info(PHP_EOL . 'Do restart - start!', __METHOD__ . '(' . __LINE__ . ')');
+        \Yii::info('Do restart - start!', __METHOD__ . '(' . __LINE__ . ')');
         foreach ($this->jobListData as $id) {
             $keys = 0;
             $job  = $this->component->jobsOne($id);
@@ -96,7 +96,7 @@ class FileDaemonController extends StreakDaemonController
                 $job->save();
             }
         }
-        \Yii::info(PHP_EOL . 'Do restart - end!', __METHOD__ . '(' . __LINE__ . ')');
+        \Yii::info('Do restart - end!', __METHOD__ . '(' . __LINE__ . ')');
     }
 
     /**
@@ -118,23 +118,23 @@ class FileDaemonController extends StreakDaemonController
     protected function defineJobs()
     {
 
-        \Yii::info(PHP_EOL . 'Define jobs - start!', __METHOD__ . '(' . __LINE__ . ')');
+        \Yii::info('Define jobs - start!', __METHOD__ . '(' . __LINE__ . ')');
 
         $return = [];
 
-        if($this->restart()) {
+        if ($this->restart()) {
             return $return;
         }
 
         if ($this->component->addJobs()) {
-            \Yii::info(PHP_EOL . 'Created new jobs.', __METHOD__ . '(' . __LINE__ . ')');
+            \Yii::info('Created new jobs.', __METHOD__ . '(' . __LINE__ . ')');
         }
 
         $this->component->transferResults();
-        YII_DEBUG && \Yii::info(PHP_EOL . 'Transfer results done.', __METHOD__ . '(' . __LINE__ . ')');
+        YII_DEBUG && \Yii::info('Transfer results done.', __METHOD__ . '(' . __LINE__ . ')');
 
         $this->checkJoblist();
-        YII_DEBUG && \Yii::info(PHP_EOL . 'Check joblist done.', __METHOD__ . '(' . __LINE__ . ')');
+        YII_DEBUG && \Yii::info('Check joblist done.', __METHOD__ . '(' . __LINE__ . ')');
 
         $jobs         = [];
         $threads      = [];
@@ -288,7 +288,7 @@ class FileDaemonController extends StreakDaemonController
             }
         }
 
-        \Yii::info(PHP_EOL . 'Define jobs - end!', __METHOD__ . '(' . __LINE__ . ')');
+        \Yii::info('Define jobs - end!', __METHOD__ . '(' . __LINE__ . ')');
 
         return $return;
     }
@@ -309,7 +309,7 @@ class FileDaemonController extends StreakDaemonController
             $this->initLogger();
             $this->renameProcess();
 
-            \Yii::info(PHP_EOL . 'Do job - start("' . $jobId . '")! PID: ' . $job->pid, __METHOD__ . '(' . __LINE__ . ')');
+            \Yii::info('Do job - start("' . $jobId . '")! PID: ' . $job->pid, __METHOD__ . '(' . __LINE__ . ')');
 
             $job->status = $job::STATUS_WORK;
             $job->save();
@@ -321,8 +321,10 @@ class FileDaemonController extends StreakDaemonController
 
                 $doJob = $doJob && $job && $job->statusWork;
 
-                YII_DEBUG && \Yii::info([$doJob], __METHOD__ . '(' . __LINE__ . ') --- $doJob');
-                YII_DEBUG && \Yii::info(($job ? $job->toArray() : [$job]), __METHOD__ . '(' . __LINE__ . ') --- $job');
+                if (YII_DEBUG) {
+                    \Yii::info([$doJob], __METHOD__ . '(' . __LINE__ . ') --- $doJob');
+                    \Yii::info(($job ? $job->toArray() : [$job]), __METHOD__ . '(' . __LINE__ . ') --- $job');
+                }
 
                 if (false === $doJob || $job->complete === $job->total) {
                     $params = [
@@ -345,7 +347,7 @@ class FileDaemonController extends StreakDaemonController
             $this->component->transfer($jobId);
         }
 
-        \Yii::info(PHP_EOL . 'Do job - end ("' . $jobId . '")! PID: ' . $job->pid, __METHOD__ . '(' . __LINE__ . ')');
+        \Yii::info('Do job - end ("' . $jobId . '")! PID: ' . $job->pid, __METHOD__ . '(' . __LINE__ . ')');
         return true;
     }
 
@@ -426,7 +428,7 @@ class FileDaemonController extends StreakDaemonController
      */
     protected function doFile($item, $table)
     {
-        \Yii::info(PHP_EOL . 'Do file - start!', __METHOD__ . '(' . __LINE__ . ')');
+        \Yii::info('Do file - start!', __METHOD__ . '(' . __LINE__ . ')');
 
         $return = false;
         $path   = null;
@@ -455,7 +457,10 @@ class FileDaemonController extends StreakDaemonController
                 $path = $arcresult->path;
             }
 
-            YII_DEBUG && \Yii::info(($arcresult ? $arcresult->toArray() : [$path]), __METHOD__ . '(' . __LINE__ . ') --- $arcresult');
+            if (YII_DEBUG) {
+                $message = $arcresult ? $arcresult->toArray() : [$path];
+                \Yii::info($message, __METHOD__ . '(' . __LINE__ . ') --- $arcresult');
+            }
 
             $this->itemData = [
                 'table'         => $table,
@@ -478,16 +483,16 @@ class FileDaemonController extends StreakDaemonController
             if ($command) {
                 $method = __FUNCTION__ . \yii\helpers\Inflector::id2camel($command);
                 if (method_exists($this, $method)) {
-                    \Yii::info(PHP_EOL . "Do file `{$command}` - start!", __METHOD__ . '(' . __LINE__ . ')' . "\n");
+                    \Yii::info("Do file `{$command}` - start!", __METHOD__ . '(' . __LINE__ . ')' . "\n");
                     $this->{$method}($path);
-                    \Yii::info(PHP_EOL . "Do file `{$command}` - end!", __METHOD__ . '(' . __LINE__ . ')' . "\n");
+                    \Yii::info("Do file `{$command}` - end!", __METHOD__ . '(' . __LINE__ . ')' . "\n");
                 }
             }
             $this->doMerge();
             $return = $this->makeFile($path);
         }
 
-        \Yii::info(PHP_EOL . 'Do file - end!', __METHOD__ . '(' . __LINE__ . ')');
+        \Yii::info('Do file - end!', __METHOD__ . '(' . __LINE__ . ')');
         return $return;
     }
 
@@ -546,7 +551,7 @@ class FileDaemonController extends StreakDaemonController
      */
     protected function makeFile($path = null)
     {
-        \Yii::info(PHP_EOL . 'Make file - start!', __METHOD__ . '(' . __LINE__ . ')');
+        \Yii::info('Make file - start!', __METHOD__ . '(' . __LINE__ . ')');
         $return = false;
         $make   = true;
 
@@ -563,7 +568,10 @@ class FileDaemonController extends StreakDaemonController
             $make = false;
             $file = $filePath . '.' . $this->itemData['extension'];
 
-            YII_DEBUG && \Yii::info(PHP_EOL . 'is_file(' . $file . '): ' . var_export(is_file($file), true), __METHOD__ . '(' . __LINE__ . ')');
+            if (YII_DEBUG) {
+                $message = 'is_file(' . $file . '): ' . var_export(is_file($file), true);
+                \Yii::info($message, __METHOD__ . '(' . __LINE__ . ')');
+            }
 
             if (false === is_file($file)) {
                 $make = true;
@@ -573,7 +581,10 @@ class FileDaemonController extends StreakDaemonController
                 foreach ($this->itemData['targets'] as $target) {
                     $file = $filePath . $target['suffix'] . '.' . $this->itemData['extension'];
 
-                    YII_DEBUG && \Yii::info(PHP_EOL . 'is_file(' . $file . '): ' . var_export(is_file($file), true), __METHOD__ . '(' . __LINE__ . ')');
+                    if (YII_DEBUG) {
+                        $message = 'is_file(' . $file . '): ' . var_export(is_file($file), true);
+                        \Yii::info($message, __METHOD__ . '(' . __LINE__ . ')');
+                    }
 
                     if (false === is_file($file)) {
                         $make = true;
@@ -664,12 +675,14 @@ class FileDaemonController extends StreakDaemonController
                     }
                 }
             } else {
-                YII_DEBUG && \Yii::info($resultModel->toArray(), __METHOD__ . '(' . __LINE__ . ') --- $resultModel');
-                YII_DEBUG && \Yii::info($resultModel->getErrors(), __METHOD__ . '(' . __LINE__ . ') --- $resultModel');
+                if (YII_DEBUG) {
+                    \Yii::info($resultModel->toArray(), __METHOD__ . '(' . __LINE__ . ') --- $resultModel');
+                    \Yii::info($resultModel->getErrors(), __METHOD__ . '(' . __LINE__ . ') --- $resultModel');
+                }
             }
         }
 
-        \Yii::info(PHP_EOL . 'Make file - end!', __METHOD__ . '(' . __LINE__ . ')');
+        \Yii::info('Make file - end!', __METHOD__ . '(' . __LINE__ . ')');
         return $return;
     }
 

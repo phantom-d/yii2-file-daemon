@@ -392,7 +392,8 @@ class FileProcessing extends \yii\base\Component
         }
 
         if (false === $return) {
-            \Yii::error(PHP_EOL . "Incorrect mime type: " . implode(',', (array)static::$mimeType), __METHOD__ . '(' . __LINE__ . ')');
+            $message = "Incorrect mime type: " . implode(',', (array)static::$mimeType);
+            \Yii::error($message, __METHOD__ . '(' . __LINE__ . ')');
         }
 
         return $return;

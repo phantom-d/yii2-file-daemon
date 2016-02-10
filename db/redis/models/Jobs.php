@@ -15,13 +15,19 @@ class Jobs extends ActiveRecord
     /**
      * Статусы задач
      */
-    const STATUS_PREPARE = 0,
-        STATUS_WAIT = 1,
-        STATUS_WORK = 2,
-        STATUS_COMPLETE = 3,
-        STATUS_ERROR = 4,
-        STATUS_ABORT = 5,
-        STATUS_RESTART = 6;
+    const STATUS_PREPARE = 0;
+
+    const STATUS_WAIT = 1;
+
+    const STATUS_WORK = 2;
+
+    const STATUS_COMPLETE = 3;
+
+    const STATUS_ERROR = 4;
+
+    const STATUS_ABORT = 5;
+
+    const STATUS_RESTART = 6;
 
     /**
      * @var array Список разрешённых для работы статусов
@@ -47,7 +53,11 @@ class Jobs extends ActiveRecord
                 'enableIDN' => true,
                 'message'   => \Yii::t('yii', "{attribute} is not a valid URL!")
             ],
-            [['pid', 'complete', 'errors', 'time_elapsed', 'time_end', 'time_per_item', 'time_create', 'time_to_left', 'total',], 'default', 'value' => 0],
+            [[
+                'pid', 'complete', 'errors', 'total',
+                'time_create', 'time_per_item', 'time_to_left', 'time_elapsed', 'time_end',
+                ], 'default', 'value' => 0
+            ],
             [['status',], 'default', 'value' => self::STATUS_WAIT],
         ];
     }

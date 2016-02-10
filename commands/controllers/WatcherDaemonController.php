@@ -81,10 +81,12 @@ class WatcherDaemonController extends StreakDaemonController
             $pid = file_get_contents($pidfile);
             if ($this->isProcessRunning($pid, $this->getConfigName($job['className'], ['Daemon']))) {
                 if ($job['enabled']) {
-                    YII_DEBUG && \Yii::info('Daemon ' . $job['className'] . ', PID: "' . $pid . '" running and working fine');
+                    if (YII_DEBUG) {
+                        \Yii::info("Daemon '{$job['className']}', PID: {$pid} running and working fine");
+                    }
                     return true;
                 } else {
-                    \Yii::warning('Daemon ' . $job['className'] . ' running, but disabled in config. Send SIGTERM signal.');
+                    \Yii::warning("Daemon {$job['className']} running, but disabled in config. Send SIGTERM signal.");
                     if (isset($job['hardKill']) && $job['hardKill']) {
                         posix_kill($pid, SIGKILL);
                     } else {
@@ -113,8 +115,9 @@ class WatcherDaemonController extends StreakDaemonController
                 $this->initLogger();
                 YII_DEBUG && \Yii::info('Daemon ' . $job['className'] . ' is running.');
             } else {
+                $result = \Yii::$app->runAction("$command_name", ['demonize' => 1]);
                 $this->halt(
-                    (0 === \Yii::$app->runAction("$command_name", ['demonize' => 1]) ? self::EXIT_CODE_NORMAL : self::EXIT_CODE_ERROR
+                    (0 === $result ? self::EXIT_CODE_NORMAL : self::EXIT_CODE_ERROR
                     )
                 );
             }

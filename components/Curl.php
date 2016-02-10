@@ -83,7 +83,7 @@ class Curl
      */
     public function get($url, $raw = true)
     {
-        return $this->_httpRequest('GET', $url, $raw);
+        return $this->httpRequest('GET', $url, $raw);
     }
 
     /**
@@ -96,7 +96,7 @@ class Curl
      */
     public function head($url)
     {
-        return $this->_httpRequest('HEAD', $url);
+        return $this->httpRequest('HEAD', $url);
     }
 
     /**
@@ -110,7 +110,7 @@ class Curl
      */
     public function post($url, $raw = true)
     {
-        return $this->_httpRequest('POST', $url, $raw);
+        return $this->httpRequest('POST', $url, $raw);
     }
 
     /**
@@ -124,7 +124,7 @@ class Curl
      */
     public function put($url, $raw = true)
     {
-        return $this->_httpRequest('PUT', $url, $raw);
+        return $this->httpRequest('PUT', $url, $raw);
     }
 
     /**
@@ -138,7 +138,7 @@ class Curl
      */
     public function delete($url, $raw = true)
     {
-        return $this->_httpRequest('DELETE', $url, $raw);
+        return $this->httpRequest('DELETE', $url, $raw);
     }
 
     /**
@@ -288,7 +288,7 @@ class Curl
      *
      * @return mixed
      */
-    private function _httpRequest($method, $url, $raw = false)
+    private function httpRequest($method, $url, $raw = false)
     {
         //Init
         $body = '';
