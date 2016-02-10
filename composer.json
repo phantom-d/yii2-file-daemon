@@ -27,6 +27,12 @@
             "url": "git@gitlab.bnmedia.ru:develop/yii2-file-daemon.git"
         }
     ],
+    "extra": {
+        "asset-installer-paths": {
+            "npm-asset-library": "vendor/npm",
+            "bower-asset-library": "vendor/bower"
+        }
+    },
     "autoload": {
         "psr-4": {
             "phantomd\\filedaemon\\": ""

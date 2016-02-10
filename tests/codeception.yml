@@ -9,6 +9,9 @@ coverage:
             - ../traits/*
             - ../docs/*
             - ../config/*
+            - ../tests/*
+            - ../README.md
+            - ../composer.*
 paths:
     tests: codeception
     data: codeception/_data
