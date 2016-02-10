@@ -7,7 +7,7 @@ use yii\helpers\StringHelper;
 use yii\helpers\FileHelper;
 
 /**
- * Class ImageProcessing
+ * Class ImageProcessing. Component for the image processing.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

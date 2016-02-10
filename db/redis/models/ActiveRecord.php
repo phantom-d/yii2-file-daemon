@@ -9,7 +9,7 @@ use yii\helpers\StringHelper;
 use yii\helpers\ArrayHelper;
 
 /**
- * Class ActiveRecord
+ * Class ActiveRecord. Base model for RedisDB AR.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

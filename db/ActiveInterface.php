@@ -3,7 +3,7 @@
 namespace phantomd\filedaemon\db;
 
 /**
- * DataInterface
+ * Interface ActiveInterface. Base mothods for processing models.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

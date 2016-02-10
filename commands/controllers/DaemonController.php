@@ -9,7 +9,7 @@ use yii\helpers\Inflector;
 use yii\helpers\StringHelper;
 
 /**
- * Class DaemonController
+ * Class DaemonController. Base daemon controller.
  *
  * @author Vladimir Yants <vladimir.yants@gmail.com>
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>

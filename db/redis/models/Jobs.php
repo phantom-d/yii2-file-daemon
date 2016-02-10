@@ -5,7 +5,7 @@ namespace phantomd\filedaemon\db\redis\models;
 use Yii;
 
 /**
- * Class Joblist
+ * Class Jobs. Model for jobs. RedisDB.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

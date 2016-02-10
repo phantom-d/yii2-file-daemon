@@ -7,7 +7,7 @@ use yii\helpers\FileHelper;
 use yii\httpclient\Client;
 
 /**
- * FileProcessing
+ * Class FileProcessing. Base component for the file processing.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

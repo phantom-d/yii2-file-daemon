@@ -6,7 +6,7 @@ use Yii;
 use yii\base\InvalidParamException;
 
 /**
- * SortedsetModel
+ * Class SortedsetModel. Base model for RedisDB Sorted sets.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

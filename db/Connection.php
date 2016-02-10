@@ -8,7 +8,7 @@ use yii\base\UnknownMethodException;
 use yii\base\InvalidParamException;
 
 /**
- * Class Connection
+ * Class Connection. Database manager for the processing.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

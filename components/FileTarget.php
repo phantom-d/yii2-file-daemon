@@ -6,7 +6,7 @@ use yii\log\Logger;
 use yii\helpers\VarDumper;
 
 /**
- * @inheritdoc
+ * FileTarget records log messages in a file. Overided.
  */
 class FileTarget extends \yii\log\FileTarget
 {

@@ -5,7 +5,7 @@ namespace phantomd\filedaemon\commands\controllers;
 use yii\base\NotSupportedException;
 
 /**
- * Class StreakDaemonController
+ * Class StreakDaemonController. Intermediate class.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

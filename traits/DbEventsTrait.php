@@ -5,7 +5,12 @@ namespace phantomd\filedaemon\traits;
 use yii\base\ModelEvent;
 
 /**
- * Trait DbEventsTrait
+ * Trait DbEventsTrait. Additional events for database models.
+ *
+ * @method bool beforeRemove() Event before remove.
+ * @method bool afterRemove() Event after remove.
+ * @method bool beforeRename() Event before rename.
+ * @method bool afterRename() Event after rename.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

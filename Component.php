@@ -5,7 +5,7 @@ namespace phantomd\filedaemon;
 use yii\base\InvalidParamException;
 
 /**
- * Class Component
+ * Class Component. Fabrica for processing.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * Yii2 cURL wrapper
- * With RESTful support.
- */
-
 namespace phantomd\filedaemon\components;
 
 use Yii;
@@ -13,7 +8,7 @@ use yii\helpers\Json;
 use yii\web\HttpException;
 
 /**
- * Class Curl
+ * Class Curl. cURL wrapper with RESTful support.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

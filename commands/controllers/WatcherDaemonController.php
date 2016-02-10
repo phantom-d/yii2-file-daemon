@@ -3,7 +3,7 @@
 namespace phantomd\filedaemon\commands\controllers;
 
 /**
- * Class WatcherDaemonController
+ * Class WatcherDaemonController. Daemon controller for running other daemons.
  *
  * @author Vladimir Yants <vladimir.yants@gmail.com>
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>

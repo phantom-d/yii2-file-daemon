@@ -8,7 +8,7 @@ use yii\helpers\Inflector;
 use yii\helpers\StringHelper;
 
 /**
- * Class ActiveModel
+ * Class ActiveModel. Base model for RedisDB sets like: Sorted sets, Hashes.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

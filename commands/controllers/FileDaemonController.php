@@ -5,7 +5,7 @@ namespace phantomd\filedaemon\commands\controllers;
 use yii\helpers\FileHelper;
 
 /**
- * Class FileDaemonController
+ * Class FileDaemonController. Base file deamon controller for the extension.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

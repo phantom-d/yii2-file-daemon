@@ -9,7 +9,7 @@ use yii\web\NotFoundHttpException;
 use yii\web\BadRequestHttpException;
 
 /**
- * Class DaemonController
+ * Class DaemonController. Frontend REST controller.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
