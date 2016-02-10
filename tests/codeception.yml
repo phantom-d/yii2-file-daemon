@@ -1,11 +1,11 @@
 actor: Tester
-#coverage:
-#    enabled: true
-#    whitelist:
-#        include:
-#            - commands/*
-#            - db/*
-#            - frontend/*
+coverage:
+    enabled: true
+    whitelist:
+        include:
+            - ../commands/*
+            - ../db/*
+            - ../frontend/*
 paths:
     tests: codeception
     data: codeception/_data

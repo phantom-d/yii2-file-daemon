@@ -39,4 +39,4 @@ composer.lock
 *.properties
 *.*~
 
-tests/_output/*
+tests/codeception/_output/*
