@@ -171,9 +171,9 @@ class DaemonController extends Controller
     }
 
     /**
-     * Вывод картинки по полученному URI, если соответствует форматам из конфигурации
+     * Show image from URI
      *
-     * @param string $url URI запрашиваемой картинки
+     * @param string $url Image URI
      */
     public function actionView($url)
     {

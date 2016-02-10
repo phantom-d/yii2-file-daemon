@@ -14,7 +14,7 @@ trait DbEventsTrait
 
     /**
      * This method is invoked before removing a table.
-     * The default implementation raises the [[\phantomd\filedaemon\db\ActiveInterface::EVENT_BEFORE_REMOVE]] event.
+     * The default implementation raises the db\ActiveInterface::EVENT_BEFORE_REMOVE event.
      * When overriding this method, make sure you call the parent implementation like the following:
      *
      * ```php
@@ -41,7 +41,7 @@ trait DbEventsTrait
 
     /**
      * This method is invoked after remove a table.
-     * The default implementation raises the [[\phantomd\filedaemon\db\ActiveInterface::EVENT_AFTER_REMOVE]] event.
+     * The default implementation raises the db\ActiveInterface::EVENT_AFTER_REMOVE event.
      * You may override this method to do postprocessing after the table is removed.
      * Make sure you call the parent implementation so that the event is raised properly.
      */
@@ -55,7 +55,7 @@ trait DbEventsTrait
 
     /**
      * This method is invoked before renaming a table.
-     * The default implementation raises the [[\phantomd\filedaemon\db\ActiveInterface::EVENT_BEFORE_RENAME]] event.
+     * The default implementation raises the db\ActiveInterface::EVENT_BEFORE_RENAME event.
      * When overriding this method, make sure you call the parent implementation like the following:
      *
      * ```php
@@ -82,7 +82,7 @@ trait DbEventsTrait
 
     /**
      * This method is invoked after rename a table.
-     * The default implementation raises the [[\phantomd\filedaemon\db\ActiveInterface::EVENT_AFTER_RENAME]] event.
+     * The default implementation raises the db\ActiveInterface::EVENT_AFTER_RENAME event.
      * You may override this method to do postprocessing after the table is renamed.
      * Make sure you call the parent implementation so that the event is raised properly.
      */

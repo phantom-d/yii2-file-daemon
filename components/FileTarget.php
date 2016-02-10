@@ -24,7 +24,7 @@ class FileTarget extends \yii\log\FileTarget
     /**
      * Formats a log message for display as a string.
      * @param array $message the log message to be formatted.
-     * The message structure follows that in [[\yii\log\Logger::messages]].
+     * The message structure follows that in Logger::messages.
      * @return string the formatted message
      */
     public function formatMessage($message)

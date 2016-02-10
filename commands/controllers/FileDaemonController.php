@@ -308,7 +308,8 @@ class FileDaemonController extends StreakDaemonController
 
                 if (YII_DEBUG) {
                     \Yii::info([$doJob], __METHOD__ . '(' . __LINE__ . ') --- $doJob');
-                    \Yii::info(($jobModel ? $jobModel->toArray() : [$jobModel]), __METHOD__ . '(' . __LINE__ . ') --- $job');
+                    $message = ($jobModel ? $jobModel->toArray() : [$jobModel]);
+                    \Yii::info($message, __METHOD__ . '(' . __LINE__ . ') --- $job');
                 }
 
                 if (false === $doJob || $jobModel->complete === $jobModel->total) {
