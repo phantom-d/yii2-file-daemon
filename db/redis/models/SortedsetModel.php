@@ -13,6 +13,9 @@ use yii\base\InvalidParamException;
 class SortedsetModel extends ActiveModel
 {
 
+    /**
+     * @inheritdoc
+     */
     protected static $type = 'zset';
 
     /**
@@ -42,7 +45,7 @@ class SortedsetModel extends ActiveModel
     /**
      * Get one row
      *
-     * @param string $params[source_id] Key in RedisDB
+     * @param string $params Condition array
      * @return mixed
      * @throws InvalidParamException
      */
@@ -77,9 +80,7 @@ class SortedsetModel extends ActiveModel
     /**
      * Get rows
      *
-     * @param string $params['name'] Key in RedisDB
-     * @param integer $params['limit'] Limit
-     * @param integer $params['page'] Page
+     * @param string $params Condition array
      * @throws InvalidParamException
      * @return mixed
      */
@@ -177,7 +178,7 @@ class SortedsetModel extends ActiveModel
     /**
      * Get groups
      *
-     * @param string $params[pattern] Regexp condition
+     * @param string $params Regexp condition
      * @return array
      */
     public static function groups($params = [])

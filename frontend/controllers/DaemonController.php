@@ -19,7 +19,7 @@ class DaemonController extends Controller
     use \phantomd\filedaemon\traits\DaemonTrait;
 
     /**
-     * @inheritdoc
+     * Returns a list of behaviors that this component should behave as.
      */
     public function behaviors()
     {
@@ -53,7 +53,7 @@ class DaemonController extends Controller
     }
 
     /**
-     * @inheritdoc
+     * Runs an action within this controller with the specified action ID and parameters.
      */
     public function runAction($id, $params = [])
     {
@@ -74,7 +74,7 @@ class DaemonController extends Controller
     }
 
     /**
-     * @inheritdoc
+     * Declares the allowed HTTP verbs.
      */
     protected function verbs()
     {
@@ -119,7 +119,6 @@ class DaemonController extends Controller
 
      * ```
      *
-     * @param string $id Daemon id
      * @return string JSON
      */
     public function actionCreate()

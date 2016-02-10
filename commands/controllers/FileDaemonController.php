@@ -57,7 +57,7 @@ class FileDaemonController extends StreakDaemonController
     /**
      * Check job running
      *
-     * @param string|object $id Job id or [[Jobs::model()]]
+     * @param string|object $id Job id or Jobs::model()
      * @return boolean
      */
     protected function checkJob($id)
@@ -283,45 +283,45 @@ class FileDaemonController extends StreakDaemonController
     /**
      * @inheritdoc
      */
-    protected function doJob($jobId)
+    protected function doJob($job)
     {
-        $job = $this->component->jobsOne($jobId);
+        $jobModel = $this->component->jobsOne($jobId);
 
-        if ($job && $job->statusWork) {
-            $job->pid = getmypid();
+        if ($jobModel && $jobModel->statusWork) {
+            $jobModel->pid = getmypid();
 
-            $this->shortName = $this->shortName . '_' . $job->name;
+            $this->shortName = $this->shortName . '_' . $jobModel->name;
             $this->initLogger();
             $this->renameProcess();
 
-            \Yii::info('Do job - start("' . $jobId . '")! PID: ' . $job->pid, __METHOD__ . '(' . __LINE__ . ')');
+            \Yii::info('Do job - start("' . $jobId . '")! PID: ' . $jobModel->pid, __METHOD__ . '(' . __LINE__ . ')');
 
-            $job->status = $job::STATUS_WORK;
-            $job->save();
+            $jobModel->status = $jobModel::STATUS_WORK;
+            $jobModel->save();
 
-            $doJob = $job->complete < $job->total;
+            $doJob = $jobModel->complete < $jobModel->total;
 
             while ($doJob) {
-                $doJob = $this->doThread($job);
+                $doJob = $this->doThread($jobModel);
 
-                $doJob = $doJob && $job && $job->statusWork;
+                $doJob = $doJob && $jobModel && $jobModel->statusWork;
 
                 if (YII_DEBUG) {
                     \Yii::info([$doJob], __METHOD__ . '(' . __LINE__ . ') --- $doJob');
-                    \Yii::info(($job ? $job->toArray() : [$job]), __METHOD__ . '(' . __LINE__ . ') --- $job');
+                    \Yii::info(($jobModel ? $jobModel->toArray() : [$jobModel]), __METHOD__ . '(' . __LINE__ . ') --- $job');
                 }
 
-                if (false === $doJob || $job->complete === $job->total) {
+                if (false === $doJob || $jobModel->complete === $jobModel->total) {
                     $params = [
                         'time_end' => microtime(true),
                     ];
 
-                    if ($job->complete === $job->total) {
-                        $params['status'] = $job::STATUS_COMPLETE;
+                    if ($jobModel->complete === $jobModel->total) {
+                        $params['status'] = $jobModel::STATUS_COMPLETE;
                     }
 
-                    $job->setAttributes($params);
-                    $job->save();
+                    $jobModel->setAttributes($params);
+                    $jobModel->save();
 
                     $doJob = false;
                 } else {
@@ -332,14 +332,14 @@ class FileDaemonController extends StreakDaemonController
             $this->component->transfer($jobId);
         }
 
-        \Yii::info('Do job - end ("' . $jobId . '")! PID: ' . $job->pid, __METHOD__ . '(' . __LINE__ . ')');
+        \Yii::info('Do job - end ("' . $jobId . '")! PID: ' . $jobModel->pid, __METHOD__ . '(' . __LINE__ . ')');
         return true;
     }
 
     /**
      * Job thread
      *
-     * @param object $job [[Jobs::model()]]
+     * @param object $job Jobs::model()
      * @return true
      */
     protected function doThread($job)

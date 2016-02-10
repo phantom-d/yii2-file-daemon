@@ -38,12 +38,36 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
     protected $tableName = null;
 
     /**
-     * @inheritdoc
+     * Initializes the object.
      */
     public function init()
     {
         parent::init();
         $this->tableName = $this->tableName();
+    }
+
+    /**
+     * Returns the validation rules for attributes.
+     */
+    public function rules()
+    {
+        return [];
+    }
+
+    /**
+     * Returns the list of attribute names.
+     */
+    public function attributes()
+    {
+        return [];
+    }
+
+    /**
+     * Returns the attribute labels.
+     */
+    public function attributeLabels()
+    {
+        return [];
     }
 
     /**
@@ -82,7 +106,7 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
     }
 
     /**
-     * @inheritdoc
+     * Declares the name of the database table associated with this AR class.
      */
     public static function tableName()
     {
@@ -155,7 +179,7 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
     }
 
     /**
-     * @inheritdoc
+     * Saves the current record.
      */
     public function save($runValidation = true, $attributeNames = null)
     {
@@ -163,15 +187,31 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
     }
 
     /**
-     * @inheritdoc
+     * Inserts a row into the associated database table using the attribute values of this record.
      */
-    public function insert($runValidation = true, $attributes = null)
+    public function insert($runValidation = true, $attributeNames = null)
     {
-        return parent::insert($runValidation, $attributes);
+        return parent::insert($runValidation, $attributeNames);
     }
 
     /**
-     * @inheritdoc
+     * Saves the changes to this active record into the associated database table.
+     */
+    public function update($runValidation = true, $attributeNames = null)
+    {
+        return parent::update($runValidation, $attributeNames);
+    }
+
+    /**
+     * Deletes the table row corresponding to this active record.
+     */
+    public function delete()
+    {
+        return parent::delete();
+    }
+
+    /**
+     * Creates an ActiveQuery instance for query purpose.
      */
     public static function find()
     {
@@ -179,7 +219,7 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
     }
 
     /**
-     * @inheritdoc
+     * Returns the primary key **name(s)** for this AR class.
      */
     public static function primaryKey()
     {

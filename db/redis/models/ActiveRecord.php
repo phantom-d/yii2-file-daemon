@@ -25,6 +25,30 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
     }
 
     /**
+     * Returns the validation rules for attributes.
+     */
+    public function rules()
+    {
+        return [];
+    }
+
+    /**
+     * Returns the list of attribute names.
+     */
+    public function attributes()
+    {
+        return [];
+    }
+
+    /**
+     * Returns the attribute labels.
+     */
+    public function attributeLabels()
+    {
+        return [];
+    }
+
+    /**
      * @inheritdoc
      */
     public static function model($params = [])

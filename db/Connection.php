@@ -15,8 +15,14 @@ use yii\base\InvalidParamException;
 class Connection extends Component
 {
 
+    /**
+     * @var array Parameters for database connections
+     */
     public $params = [];
 
+    /**
+     * @var array Database connections for daemons
+     */
     private $models = [
         'source'    => null,
         'result'    => null,
@@ -25,7 +31,9 @@ class Connection extends Component
     ];
 
     /**
-     * @inheritdoc
+     * Initializes the object.
+     * This method is invoked at the end of the constructor after the object is initialized with the
+     * given configuration.
      */
     public function init()
     {
@@ -34,7 +42,8 @@ class Connection extends Component
     }
 
     /**
-     * @inheritdoc
+     * Calls the named method which is not a class method.
+     * Call this method directly from database connections
      */
     public function __call($name, $params)
     {

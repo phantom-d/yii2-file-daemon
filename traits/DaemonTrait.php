@@ -5,7 +5,7 @@ namespace phantomd\filedaemon\traits;
 use yii\helpers\FileHelper;
 
 /**
- * Trait DaemonTrait provides a common implementation of the [[DaemonController]] interface.
+ * Trait DaemonTrait provides a common implementation of the DaemonController interface.
  *
  * @property \phantomd\filedaemon\FileProcessing $component FileProcessing component
  * @method void restart() Force kill current process if present file kind of `restart-{daemon name}`

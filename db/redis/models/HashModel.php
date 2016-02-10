@@ -105,7 +105,7 @@ class HashModel extends ActiveModel
     /**
      * Get rows
      *
-     * @param string $params[fields] Fields
+     * @param array $params Fields
      * @throws InvalidParamException
      * @return mixed
      */

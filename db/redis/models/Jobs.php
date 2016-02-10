@@ -86,7 +86,7 @@ class Jobs extends ActiveRecord
     }
 
     /**
-     * @inheritdoc
+     * This method is called at the beginning of inserting or updating a record.
      */
     public function beforeSave($insert)
     {
@@ -106,7 +106,7 @@ class Jobs extends ActiveRecord
     }
 
     /**
-     * @inheritdoc
+     * This method is called when the AR object is created and populated with the query result.
      */
     public function afterFind()
     {

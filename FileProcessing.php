@@ -15,7 +15,7 @@ class FileProcessing extends \yii\base\Component
 {
 
     /**
-     * @var phantomd\filedaemon\db\Connection Database manager
+     * @var db\Connection Database manager
      */
     protected static $adapter = null;
 
@@ -63,7 +63,7 @@ class FileProcessing extends \yii\base\Component
 
     /**
      * Calls the named method which is not a class method.
-     * Call this method directly from database manager [[FileProcessing::$adapter]]
+     * Call this method directly from database manager [[db\Connection]]
      */
     public function __call($name, $params)
     {
@@ -451,7 +451,7 @@ class FileProcessing extends \yii\base\Component
                             'command'   => $model->command,
                             'object_id' => $model->object_id,
                             'url'       => $model->time_dir . DIRECTORY_SEPARATOR . $model->file_name,
-                            'file_id'  => $model->file_id,
+                            'file_id'   => $model->file_id,
                         ];
                     }
 

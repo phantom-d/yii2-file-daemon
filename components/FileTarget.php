@@ -12,7 +12,8 @@ class FileTarget extends \yii\log\FileTarget
 {
 
     /**
-     * @inheritdoc
+     * Initializes the route.
+     * This method is invoked after the route is created by the route manager.
      */
     public function init()
     {
@@ -21,7 +22,10 @@ class FileTarget extends \yii\log\FileTarget
     }
 
     /**
-     * @inheritdoc
+     * Formats a log message for display as a string.
+     * @param array $message the log message to be formatted.
+     * The message structure follows that in [[\yii\log\Logger::messages]].
+     * @return string the formatted message
      */
     public function formatMessage($message)
     {
