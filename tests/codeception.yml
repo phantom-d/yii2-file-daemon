@@ -3,9 +3,12 @@ coverage:
     enabled: true
     whitelist:
         include:
-            - ../commands/*
-            - ../db/*
-            - ../frontend/*
+            - ../*
+        exclude:
+            - ../vendor/*
+            - ../traits/*
+            - ../docs/*
+            - ../config/*
 paths:
     tests: codeception
     data: codeception/_data
