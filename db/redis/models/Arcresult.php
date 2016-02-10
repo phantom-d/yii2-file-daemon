@@ -3,7 +3,7 @@
 namespace phantomd\filedaemon\db\redis\models;
 
 /**
- * Class Arcresult. Model for archive results. RedisDB.
+ * Class Arcresult. Model for archive results. **RedisDB**.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

@@ -6,7 +6,7 @@ use Yii;
 use yii\base\InvalidParamException;
 
 /**
- * Class HashModel. Base model for RedisDB Hashes sets.
+ * Class HashModel. Base model for **RedisDB** Hashes sets.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

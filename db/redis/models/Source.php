@@ -3,7 +3,7 @@
 namespace phantomd\filedaemon\db\redis\models;
 
 /**
- * Class Source. Model for sources. RedisDB.
+ * Class Source. Model for sources. **RedisDB**.
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
