@@ -46,11 +46,11 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
 
     /**
      * Get ActiveQuery object
-     * 
+     *
      * @param array $params Condition array
      * @param int $limit Limit
      * @param int $page Page
-     * 
+     *
      * @return \yii\redis\ActiveQuery
      */
     public static function getQuery($params = [], $limit = 0, $page = 0)

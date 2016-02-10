@@ -248,12 +248,12 @@ class Curl
     /**
      * Composes the log/profiling message token for the given HTTP request parameters.
      * This method should be used by transports during request sending logging.
-     * 
+     *
      * @param string $method request method name.
      * @param string $url request URL.
      * @param array $headers request headers.
      * @param string $content request content.
-     * 
+     *
      * @return string log token.
      */
     public function createRequestLogToken($method, $url, $headers, $content = '')

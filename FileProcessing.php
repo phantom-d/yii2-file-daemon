@@ -72,7 +72,7 @@ class FileProcessing extends \yii\base\Component
 
     /**
      * Get object HttpClient
-     * 
+     *
      * @return \phantomd\filedaemon\components\Curl Component
      */
     public function getWebClient()

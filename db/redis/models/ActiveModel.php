@@ -157,7 +157,7 @@ class ActiveModel extends \yii\db\BaseActiveRecord implements \phantomd\filedaem
     /**
      * @inheritdoc
      */
-    public function save($runValidation = true, $attributeNames = NULL)
+    public function save($runValidation = true, $attributeNames = null)
     {
         return parent::save($runValidation, $attributeNames);
     }

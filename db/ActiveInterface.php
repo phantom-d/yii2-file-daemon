@@ -39,21 +39,21 @@ interface ActiveInterface
 
     /**
      * Create model
-     * 
+     *
      * @param array $params Data for creating
      */
     public static function model($params = []);
 
     /**
      * Get count rows from database
-     * 
+     *
      * @param array $params Condition array
      */
     public static function count($params = []);
 
     /**
      * Get one row from database
-     * 
+     *
      * @param array $params Condition array
      * @param bool $remove Delete reciving row from database
      */
@@ -61,7 +61,7 @@ interface ActiveInterface
 
     /**
      * Get rows from database
-     * 
+     *
      * @param array $params Condition array
      * @param int $limit Limit rows
      * @param int $page Page of request
@@ -70,21 +70,21 @@ interface ActiveInterface
 
     /**
      * Get names from database
-     * 
+     *
      * @param array $params Condition array
      */
     public static function names($params = []);
 
     /**
      * Get groups from database
-     * 
+     *
      * @param array $params Condition array
      */
     public static function groups($params = []);
 
     /**
      * Change name of row
-     * 
+     *
      * @param array $params Condition array
      */
     public function rename($params = []);
