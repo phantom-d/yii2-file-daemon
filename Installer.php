@@ -15,16 +15,30 @@ class Installer extends LibraryInstaller
 
     public static function createConfigure($event)
     {
-        $filesystem = new Filesystem();
+        $fs       = new Filesystem();
         $composer = $event->getComposer();
-        
-        $vendorDir = $composer->getConfig()->get('vendor-dir');
-        $package = $event->getOperation()->getPackage();
 
-        echo PHP_EOL,
-        '$package(' . __LINE__ . '): ', print_r($package, true), PHP_EOL,
-        PHP_EOL;
-    
+        $vendorDir  = $composer->getConfig()->get('vendor-dir');
+        $packageDir = $composer->getPackage()->getName();
+        $rootDir    = dirname($vendorDir);
+
+        $prefix = '';
+
+        if (is_dir($rootDir . DIRECTORY_SEPARATOR . 'common/config')) {
+            $prefix = 'common' . DIRECTORY_SEPARATOR;
+        }
+
+        $configPath = $rootDir . DIRECTORY_SEPARATOR . $prefix . 'config/daemons';
+
+        $fs->ensureDirectoryExists($configPath);
+
+        $path = $vendorDir
+            . DIRECTORY_SEPARATOR . $packageDir
+            . DIRECTORY_SEPARATOR . 'config/daemons.php';
+
+        if (file_exists($path)) {
+            copy($path, $configPath . DIRECTORY_SEPARATOR . 'daemons.php');
+        }
     }
 
 }

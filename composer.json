@@ -28,7 +28,7 @@
         }
     ],
     "scripts": {
-        "post-package-install": [
+        "post-install-cmd": [
             "phantomd\\filedaemon\\Installer::createConfigure"
         ]
     },
