@@ -13,7 +13,9 @@
     "require": {
         "php": ">=5.4.0",
         "yiisoft/yii2": ">=2.0.4",
-        "yiisoft/yii2-redis": "*"
+        "yiisoft/yii2-redis": "*",
+        "cebe/markdown": "^1.0",
+        "yiisoft/yii2-apidoc": "^2.0"
     },
     "require-dev": {
         "codeception/codeception": "2.0.*",
