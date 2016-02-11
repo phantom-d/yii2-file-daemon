@@ -13,13 +13,13 @@ Yii2 демон для работы с файлами
 php composer.phar require --prefer-dist phantom-d/yii2-file-daemon "*"
 ```
 
-или добавить
+или добавить в секцию **require**:
 
 ```
 "phantom-d/yii2-file-daemon": "*"
 ```
 
-в секцию **require** и
+и в секцию **repositories**:
 
 ```
 {
@@ -28,4 +28,4 @@ php composer.phar require --prefer-dist phantom-d/yii2-file-daemon "*"
 }
 ```
 
-в секцию **repositories** в ваш файл `composer.json`
+ в ваш файл `composer.json`
