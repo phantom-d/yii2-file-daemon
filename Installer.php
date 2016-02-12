@@ -4,40 +4,50 @@ namespace phantomd\filedaemon;
 
 use Composer\Installer\LibraryInstaller;
 use Composer\Util\Filesystem;
+use Composer\Installer\PackageEvent;
+use Composer\EventDispatcher\Event;
+use Composer\Package\Package;
 
 /**
- * Class Installer. Fabrica for processing.
+ * Class Installer. Create base daemon configuration after install
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
 class Installer extends LibraryInstaller
 {
 
-    public static function createConfigure($event)
+    /**
+     * Create base configuration
+     *
+     * @param PackageEvent $event Package event
+     */
+    public static function createConfigure(PackageEvent $event)
     {
-        $fs       = new Filesystem();
-        $composer = $event->getComposer();
+        $package = $event->getOperation()->getPackage();
+        $packageDir = $package->getName();
 
-        $vendorDir  = $composer->getConfig()->get('vendor-dir');
-        $packageDir = $composer->getPackage()->getName();
-        $rootDir    = dirname($vendorDir);
+        if ('phantom-d/yii2-file-daemon' === $packageDir) {
+            $fs         = new Filesystem();
+            $composer   = $event->getComposer();
+            $vendorDir  = $composer->getConfig()->get('vendor-dir');
+            $rootDir    = dirname($vendorDir);
 
-        $prefix = '';
+            $prefix = '';
 
-        if (is_dir($rootDir . DIRECTORY_SEPARATOR . 'common/config')) {
-            $prefix = 'common' . DIRECTORY_SEPARATOR;
-        }
+            if (is_dir($rootDir . DIRECTORY_SEPARATOR . 'common/config')) {
+                $prefix = 'common' . DIRECTORY_SEPARATOR;
+            }
 
-        $configPath = $rootDir . DIRECTORY_SEPARATOR . $prefix . 'config/daemons';
+            $configPath = $rootDir . DIRECTORY_SEPARATOR . $prefix . 'config/daemons';
+            $fs->ensureDirectoryExists($configPath);
 
-        $fs->ensureDirectoryExists($configPath);
+            $path = $vendorDir
+                . DIRECTORY_SEPARATOR . $packageDir
+                . DIRECTORY_SEPARATOR . 'config/daemons.php';
 
-        $path = $vendorDir
-            . DIRECTORY_SEPARATOR . $packageDir
-            . DIRECTORY_SEPARATOR . 'config/daemons.php';
-
-        if (file_exists($path)) {
-            copy($path, $configPath . DIRECTORY_SEPARATOR . 'daemons.php');
+            if (file_exists($path)) {
+                copy($path, $configPath . DIRECTORY_SEPARATOR . 'daemons.php');
+            }
         }
     }
 
