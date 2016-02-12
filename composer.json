@@ -27,11 +27,6 @@
             "url": "git@gitlab.bnmedia.ru:develop/yii2-file-daemon.git"
         }
     ],
-    "scripts": {
-        "post-package-install": [
-            "phantomd\\filedaemon\\Installer::createConfigure"
-        ]
-    },
     "extra": {
         "asset-installer-paths": {
             "npm-asset-library": "vendor/npm",

@@ -30,9 +30,12 @@ trait DaemonTrait
     protected $config = [];
 
     /**
-     * @var string Path to directory where placed configuration files
+     * @var mixed Path to directory where placed configuration files. Can be _string_ or _array_
      */
-    protected $configPath = '@app/config/daemons';
+    protected $configPath = [
+        '@app/common/config/daemons',
+        '@app/config/daemons',
+    ];
 
     /**
      * @var string File name configuration
@@ -107,7 +110,7 @@ trait DaemonTrait
      */
     protected function beforeRestart()
     {
-
+        
     }
 
     /**
@@ -182,13 +185,35 @@ trait DaemonTrait
      */
     protected function getConfig()
     {
-        $fileConfig = FileHelper::normalizePath(
-                \Yii::getAlias(
-                    $this->configPath . DIRECTORY_SEPARATOR . $this->configFile
-                )
-        );
-        if (is_file($fileConfig)) {
-            $params = include $fileConfig;
+        $params = [];
+
+        if (is_array($this->configPath)) {
+            foreach ($this->configPath as $configPath) {
+                $fileConfig = FileHelper::normalizePath(
+                        \Yii::getAlias(
+                            $configPath . DIRECTORY_SEPARATOR . $this->configFile
+                        )
+                );
+                if (is_file($fileConfig)) {
+                    $config = include $fileConfig;
+                    if (false === empty($config) && is_array($config)) {
+                        $params = array_merge($params, $config);
+                    }
+                }
+            }
+        } else {
+            $fileConfig = FileHelper::normalizePath(
+                    \Yii::getAlias(
+                        $this->configPath . DIRECTORY_SEPARATOR . $this->configFile
+                    )
+            );
+
+            if (is_file($fileConfig)) {
+                $config = include $fileConfig;
+                if (false === empty($config) && is_array($config)) {
+                    $params = array_merge($params, $config);
+                }
+            }
         }
 
         if (isset($params[$this->configName])) {

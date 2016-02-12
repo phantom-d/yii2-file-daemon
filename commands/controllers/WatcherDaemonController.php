@@ -12,6 +12,7 @@ class WatcherDaemonController extends StreakDaemonController
 {
 
     /**
+     * Daemon configuration:
      *
      * ```php
      * [
