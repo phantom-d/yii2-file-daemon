@@ -32,7 +32,7 @@ php composer.phar require --prefer-dist phantom-d/yii2-file-daemon "dev-master"
 ## Настройка приложения
 
 1 - Для первоначальной настройки рекомендуется скопировать базовый файл настройки демонов.
-Базовый файл конфигурации располагается в директории `@vendor/phantom-d/yii2-file-daemon/config/daemons.php`
+Базовый файл конфигурации располагается в директории `@vendor/phantom-d/yii2-file-daemon/config/daemons.php` [daemons.php](daemons.php.md)
 
 Создать директорию:
 

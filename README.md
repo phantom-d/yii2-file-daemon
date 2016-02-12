@@ -1,11 +1,12 @@
 Yii2 file daemon 
 =================
+
 Yii2 демон для работы с файлами
 
 Установка
-=========
+---------
 
-## Получение пакета Composer
+### Получение пакета Composer
 
 Предпочтительный способ установки этого расширения через [composer](http://getcomposer.org/download/).
 
@@ -33,7 +34,7 @@ php composer.phar require --prefer-dist phantom-d/yii2-file-daemon "dev-master"
 
  в ваш файл `composer.json`
 
-## Настройка приложения
+### Настройка приложения
 
 1 - Для первоначальной настройки рекомендуется скопировать базовый файл настройки демонов.
 Базовый файл конфигурации располагается в директории `@vendor/phantom-d/yii2-file-daemon/config/daemons.php`
