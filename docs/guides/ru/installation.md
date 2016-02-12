@@ -32,7 +32,7 @@ php composer.phar require --prefer-dist phantom-d/yii2-file-daemon "dev-master"
 ## Настройка приложения
 
 1 - Для первоначальной настройки рекомендуется скопировать базовый файл настройки демонов.
-Базовый файл конфигурации располагается в директории `@vendor/phantom-d/yii2-file-daemon/config/daemons.php` [daemons.php](daemons.php.md)
+Базовый файл конфигурации располагается в директории `@vendor/phantom-d/yii2-file-daemon/config/daemons.php`. [Структура файла конфигурации демонов](daemons.php.md).
 
 Создать директорию:
 
@@ -174,5 +174,5 @@ class DaemonController extends \phantomd\filedaemon\frontend\controllers\DaemonC
 5 * * * * /{PATH/TO/YII/PROJECT}/yii watcher-daemon --demonize=1
 ```
 
-Наблюдатель не может стартовать дважды, только один процесс может работать.
+Только один процесс наблюдателя будет в работе не зависимо от количества стартовавших процессов.
  
