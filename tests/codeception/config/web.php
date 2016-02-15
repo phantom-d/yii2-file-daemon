@@ -2,7 +2,7 @@
 
 return [
     'id'         => 'basic',
-    'basePath'   => realpath(__DIR__ . '/../..'),
+    'basePath'   => realpath(__DIR__ . '/../../..'),
     'bootstrap'  => ['log'],
     'components' => [
         'request'      => [
@@ -27,6 +27,7 @@ return [
                 ],
             ],
         ],
+        'redis'        => require(__DIR__ . '/redis.php'),
         'urlManager'   => [
             'class'               => '\yii\web\UrlManager',
             'enablePrettyUrl'     => true,
@@ -51,4 +52,3 @@ return [
     'params'     => require(__DIR__ . '/params.php'),
     'timeZone'   => 'Europe/Moscow',
 ];
-

@@ -1,35 +1,24 @@
 <?php
 
-class FileProcessingTest extends \Codeception\TestCase\Test
+namespace tests\codeception\unit;
+
+use yii\codeception\TestCase;
+
+class FileProcessingTest extends TestCase
 {
 
     /**
-     * @var \UnitTester
+     * @var \phantomd\filedaemon\FileProcessing FileProcessing
      */
-    protected $tester;
+    protected $component = null;
 
-    /**
-     * @var array
-     */
-    protected $config;
-
-    /**
-     * @var phantomd\filedaemon\FileProcessing
-     */
-    protected $component;
-
-    /**
-     * @var \Yii 
-     */
-    protected $app;
-
-    protected function _before()
+    protected function setUp()
     {
-        $this->app = $this->getModule('Yii2')->app;
-        $this->config    = $this->app->params['daemons']['image-server'];
+        parent::setUp();
+        $config          = \Yii::$app->params['daemons']['image-server'];
         $params          = [
-            'class'  => '\phantomd\filedaemon\FileProcessing',
-            'config' => $this->config,
+            'class'  => '\phantomd\filedaemon\ImageProcessing',
+            'config' => $config,
         ];
         $this->component = \Yii::createObject($params);
     }
@@ -38,9 +27,23 @@ class FileProcessingTest extends \Codeception\TestCase\Test
     {
 
         $webClient = $this->component->getWebClient();
-        $this->tester->assertNotEmpty($webClient);
+        $this->assertNotEmpty($webClient);
 
         return $webClient;
+    }
+
+    public function testAddSource()
+    {
+        $data = [
+            [
+                'command'   => 0,
+                'object_id' => 'test_object',
+                'url'       => 'https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png',
+                'file_id'   => 'test_file',
+            ]
+        ];
+        $name = 'test_source::' . microtime(true);
+        $this->assertTrue($this->component->addSource($name, $data));
     }
 
 }
