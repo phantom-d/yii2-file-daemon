@@ -144,7 +144,7 @@ class SortedsetModel extends ActiveModel
 
         if (is_array($params)) {
             if (isset($params['pattern']) && (string)$params['pattern']) {
-                $pattern   = (string)$params['pattern'];
+                $pattern = (string)$params['pattern'];
             }
             if (isset($params['separator']) && (string)$params['separator']) {
                 $separator = (string)$params['separator'];

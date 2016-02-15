@@ -110,7 +110,7 @@ trait DaemonTrait
      */
     protected function beforeRestart()
     {
-        
+        return true;
     }
 
     /**

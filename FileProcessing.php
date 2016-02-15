@@ -15,7 +15,7 @@ class FileProcessing extends \yii\base\Component
 {
 
     /**
-     * @var db\Connection Database manager
+     * @var \phantomd\filedaemon\db\Connection Database manager
      */
     protected static $adapter = null;
 
