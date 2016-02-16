@@ -25,6 +25,11 @@ class FileProcessing extends \yii\base\Component
     protected static $mimeType = null;
 
     /**
+     * @var integer Max post results
+     */
+    protected $maxPostCount = 100;
+
+    /**
      * @var array Daemon configuration
      */
     public $config = null;
@@ -59,6 +64,10 @@ class FileProcessing extends \yii\base\Component
         ];
 
         static::$adapter = \Yii::createObject($params);
+
+        if (isset($this->config['max-count']) && (int)$this->config['max-count']) {
+            $this->maxPostCount = (int)$this->config['max-count'];
+        }
     }
 
     /**
@@ -249,7 +258,7 @@ class FileProcessing extends \yii\base\Component
      *
      * @param string $name Job name
      * @param string $callback Callback url
-     * @param int $status Default status for new job
+     * @param integer $status Default status for new job
      * @return boolean
      */
     public function addJob($name, $callback, $status = 0)
@@ -443,7 +452,7 @@ class FileProcessing extends \yii\base\Component
                 $empty = true;
                 $page  = 0;
 
-                while ($result = $this->resultAll($name, 100, $page++)) {
+                while ($result = $this->resultAll($name, $this->maxPostCount, $page++)) {
                     $empty = false;
                     $data  = [];
                     foreach ($result as $model) {

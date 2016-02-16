@@ -151,7 +151,7 @@ class DaemonController extends Controller
 
         $name = $name . '::' . microtime(true);
 
-        $sources = array_chunk($data, (int)$this->config['max-count']);
+        $sources = array_chunk($data, $this->maxPostCount);
 
         $countJobs = 0;
         foreach ($sources as $source) {

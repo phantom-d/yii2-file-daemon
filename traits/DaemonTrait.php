@@ -53,9 +53,14 @@ trait DaemonTrait
     protected $configName = '';
 
     /**
-     * @var int Current date in seconds
+     * @var integer Current date in seconds
      */
     protected $currentDate = null;
+
+    /**
+     * @var integer Max post results
+     */
+    protected $maxPostCount = 100;
 
     /**
      * @var \phantomd\filedaemon\FileProcessing FileProcessing component
@@ -222,6 +227,12 @@ trait DaemonTrait
             }
             if (isset($params[$this->configName]['child-processes']) && isset($this->maxChildProcesses)) {
                 $this->maxChildProcesses = (int)$params[$this->configName]['child-processes'];
+            }
+            if (isset($params[$this->configName]['max-threads']) && isset($this->maxThreads)) {
+                $this->maxThreads = (int)$params[$this->configName]['max-threads'];
+            }
+            if (isset($params[$this->configName]['max-count']) && (int)$params[$this->configName]['max-count']) {
+                $this->maxPostCount = (int)$params[$this->configName]['max-count'];
             }
             if (isset($params[$this->configName]['sleep']) && isset($this->sleep)) {
                 $this->sleep = (int)$params[$this->configName]['sleep'];

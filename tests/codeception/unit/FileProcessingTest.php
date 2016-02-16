@@ -17,19 +17,10 @@ class FileProcessingTest extends TestCase
         parent::setUp();
         $config          = \Yii::$app->params['daemons']['image-server'];
         $params          = [
-            'class'  => '\phantomd\filedaemon\ImageProcessing',
+            'class'  => '\phantomd\filedaemon\FileProcessing',
             'config' => $config,
         ];
         $this->component = \Yii::createObject($params);
-    }
-
-    public function testGetWebClient()
-    {
-
-        $webClient = $this->component->getWebClient();
-        $this->assertNotEmpty($webClient);
-
-        return $webClient;
     }
 
     public function testAddSource()
@@ -43,7 +34,17 @@ class FileProcessingTest extends TestCase
             ]
         ];
         $name = 'test_source::' . microtime(true);
-        $this->assertTrue($this->component->addSource($name, $data));
+        $this->assertNotNull($this->component, 'Could not initialize component!');
+//        $this->assertTrue($this->component->addSource($name, $data), 'Error adding source data to database!');
+    }
+
+    public function testGetWebClient()
+    {
+
+        $webClient = $this->component->getWebClient();
+        $this->assertNotEmpty($webClient);
+
+        return $webClient;
     }
 
 }

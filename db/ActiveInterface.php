@@ -63,8 +63,8 @@ interface ActiveInterface
      * Get rows from database
      *
      * @param array $params Condition array
-     * @param int $limit Limit rows
-     * @param int $page Page of request
+     * @param integer $limit Limit rows
+     * @param integer $page Page of request
      */
     public static function all($params = [], $limit = 10, $page = 0);
 

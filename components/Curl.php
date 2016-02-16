@@ -36,7 +36,7 @@ class Curl
     public $error = null;
 
     /**
-     * @var int Error number
+     * @var integer Error number
      */
     public $errNo = null;
 
@@ -129,7 +129,7 @@ class Curl
     /**
      * Set curl option
      *
-     * @param int $key Curl option code
+     * @param integer $key Curl option code
      * @param mixed  $value Option value
      *
      * @return $this
@@ -165,7 +165,7 @@ class Curl
     /**
      * Unset a single curl option
      *
-     * @param int $key Curl option code
+     * @param integer $key Curl option code
      *
      * @return $this
      */

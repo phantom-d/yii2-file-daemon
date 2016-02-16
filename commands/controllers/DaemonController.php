@@ -37,9 +37,14 @@ abstract class DaemonController extends Controller
     public $isMultiInstance = false;
 
     /**
-     * @var int Max daemon instances
+     * @var integer Max daemon instances
      */
     public $maxChildProcesses = 10;
+
+    /**
+     * @var integer Max jobs group instances
+     */
+    public $maxThreads = 1;
 
     /**
      * @var string Daemon folder for console command
@@ -47,7 +52,7 @@ abstract class DaemonController extends Controller
     public $daemonFolder = '';
 
     /**
-     * @var int Main procces pid
+     * @var integer Main procces pid
      */
     protected $parentPID;
 
@@ -57,17 +62,17 @@ abstract class DaemonController extends Controller
     protected static $currentJobs = [];
 
     /**
-     * @var int Memory limit for daemon, must bee less than php memory_limit
+     * @var integer Memory limit for daemon, must bee less than php memory_limit
      */
     private $memoryLimit = 268435456;
 
     /**
-     * @var int Used for soft daemon stop, set 1 to stop
+     * @var integer Used for soft daemon stop, set 1 to stop
      */
     private static $stopFlag = 0;
 
     /**
-     * @var int Delay between task list checking in seconds
+     * @var integer Delay between task list checking in seconds
      */
     protected $sleep = 5;
 
@@ -336,8 +341,8 @@ abstract class DaemonController extends Controller
      * PCNTL signals handler
      *
      * @param $signo Signal number
-     * @param int $pid Process ID
-     * @param int $status Status
+     * @param integer $pid Process ID
+     * @param integer $status Status
      */
     final public function signalHandler($signo, $pid = null, $status = null)
     {
@@ -411,7 +416,7 @@ abstract class DaemonController extends Controller
     /**
      * Stop process and show or write message
      *
-     * @param int $code Code completion -1|0|1
+     * @param integer $code Code completion -1|0|1
      * @param string $message Message
      */
     protected function halt($code, $message = null)

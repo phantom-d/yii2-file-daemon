@@ -40,6 +40,11 @@ class FileDaemonController extends StreakDaemonController
     /**
      * @inheritdoc
      */
+    public $maxThreads = 3;
+
+    /**
+     * @inheritdoc
+     */
     public $sleep = 60;
 
     /**
@@ -130,7 +135,7 @@ class FileDaemonController extends StreakDaemonController
 
         if (count($this->jobListData) < $maxProcesses && $groups = $this->component->sourceGroups()) {
             $limitProcesses = $maxProcesses - count($this->jobListData);
-            $limitTreads    = (int)$this->config['max-threads'];
+            $limitTreads    = $this->maxThreads;
             $limit          = $limitTreads;
 
             YII_DEBUG && \Yii::info([$groups], __METHOD__ . '(' . __LINE__ . ') --- $groups');

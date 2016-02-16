@@ -19,4 +19,9 @@ class ConnectionTest extends TestCase
         $this->adapter = \Yii::createObject($params);
     }
 
+    public function testSourceModel()
+    {
+        $this->assertNotNull($this->adapter, 'Could not initialize database manager!');
+    }
+
 }

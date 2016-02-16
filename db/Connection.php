@@ -125,7 +125,7 @@ class Connection extends Component
                 }
             }
 
-            if (isset($this->params['config'][$model])) {
+            if (isset($this->params['config']) && isset($this->params['config'][$model])) {
                 $config = $this->params['config'][$model];
             }
 
