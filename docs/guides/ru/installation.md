@@ -44,14 +44,14 @@ php composer.phar require --prefer-dist phantom-d/yii2-file-daemon "dev-master"
 
 2 - Создаём файл контроллера демона с именем `FileServerDaemonController.php`, который буде выполнять роль демона обработки файлов:
 
- * Шаблон Yii2-base - `@app/commands`
+ * Шаблон Yii2-base - `@app/console`
 
 ```php
 <?php
 
-namespace app\commands;
+namespace app\console;
 
-use phantomd\filedaemon\commands\controllers\FileDaemonController;
+use phantomd\filedaemon\console\controllers\FileDaemonController;
 
 /**
  * Class FileServerDaemonController.
@@ -70,7 +70,7 @@ class FileServerDaemonController extends FileDaemonController
 
 namespace console\controllers;
 
-use phantomd\filedaemon\commands\controllers\FileDaemonController;
+use phantomd\filedaemon\console\controllers\FileDaemonController;
 
 /**
  * Class FileServerDaemonController.
@@ -84,14 +84,14 @@ class FileServerDaemonController extends FileDaemonController
 
 3 - Создаём файл контроллера наблюдателя с именем `WatcherDaemonController.php`, который буде выполнять роль демона обработки файлов:
 
- * Шаблон Yii2-base - `@app/commands`
+ * Шаблон Yii2-base - `@app/console`
 
 ```php
 <?php
 
-namespace app\commands;
+namespace app\console;
 
-use phantomd\filedaemon\commands\controllers;
+use phantomd\filedaemon\console\controllers;
 
 /**
  * Class WatcherDaemonController.
@@ -110,7 +110,7 @@ class WatcherDaemonController extends controllers\WatcherDaemonController
 
 namespace console\controllers;
 
-use phantomd\filedaemon\commands\controllers;
+use phantomd\filedaemon\console\controllers;
 
 /**
  * Class WatcherDaemonController.
@@ -175,4 +175,3 @@ class DaemonController extends \phantomd\filedaemon\frontend\controllers\DaemonC
 ```
 
 Только один процесс наблюдателя будет в работе не зависимо от количества стартовавших процессов.
- 

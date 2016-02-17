@@ -1,6 +1,8 @@
 <?php
 
-namespace phantomd\filedaemon\commands\controllers;
+namespace phantomd\filedaemon\console\controllers;
+
+use phantomd\filedaemon\common\controllers\StreakDaemonController;
 
 /**
  * Class WatcherDaemonController. Daemon controller for running other daemons.

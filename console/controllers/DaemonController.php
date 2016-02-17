@@ -1,6 +1,6 @@
 <?php
 
-namespace phantomd\filedaemon\commands\controllers;
+namespace phantomd\filedaemon\console\controllers;
 
 use yii\base\NotSupportedException;
 use yii\console\Controller;

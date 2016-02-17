@@ -4,7 +4,7 @@ return [
     'id'                  => 'basic-console',
     'basePath'            => realpath(__DIR__ . '/../..'),
     'bootstrap'           => ['log'],
-    'controllerNamespace' => 'app\commands',
+    'controllerNamespace' => 'app\console',
     'components'          => [
         'log' => [
             'traceLevel'    => 3,

@@ -10,41 +10,41 @@ use yii\base\InvalidParamException;
 /**
  * Class Connection. Database manager for the processing.
  *
- * @method \phantomd\filedaemon\db\ActiveInterface sourceModel(array $params Data) Create source model with data from params
- * @method \phantomd\filedaemon\db\ActiveInterface sourceOne(array $params Condition) Get one source model by params from database
- * @method \phantomd\filedaemon\db\ActiveInterface sourceAll(array $params Condition) Get array of source models by params from database
- * @method \phantomd\filedaemon\db\ActiveInterface sourceNames(array $params Condition) Get source names from database
- * @method \phantomd\filedaemon\db\ActiveInterface sourceGroups(array $params Condition) Get source names from database
- * @method \phantomd\filedaemon\db\ActiveInterface sourceRename(string $params New name) Change name for all sources which has current name
- * @method \phantomd\filedaemon\db\ActiveInterface sourceRemove() Delete all sources with current name from database
- * @method \phantomd\filedaemon\db\ActiveInterface sourceSave() Save source to database
+ * @method ActiveInterface sourceModel(array $params Data) Create source model with data from params
+ * @method ActiveInterface sourceOne(array $params Condition) Get one source model by params from database
+ * @method ActiveInterface sourceAll(array $params Condition) Get array of source models by params from database
+ * @method ActiveInterface sourceNames(array $params Condition) Get source names from database
+ * @method ActiveInterface sourceGroups(array $params Condition) Get source names from database
+ * @method ActiveInterface sourceRename(string $params New name) Rename all sources which has current name
+ * @method ActiveInterface sourceRemove() Delete all sources with current name from database
+ * @method ActiveInterface sourceSave() Save source to database
  *
- * @method \phantomd\filedaemon\db\ActiveInterface resultModel(array $params Data) Create result model with data from params
- * @method \phantomd\filedaemon\db\ActiveInterface resultOne(array $params Condition) Get one result model by params from database
- * @method \phantomd\filedaemon\db\ActiveInterface resultAll(array $params Condition) Get array of result models by params from database
- * @method \phantomd\filedaemon\db\ActiveInterface resultNames(array $params Condition) Get result names from database
- * @method \phantomd\filedaemon\db\ActiveInterface resultGroups(array $params Condition) Get result groups from database
- * @method \phantomd\filedaemon\db\ActiveInterface resultRename(string $params New name) Change name for all results which has current name
- * @method \phantomd\filedaemon\db\ActiveInterface resultRemove() Delete all results with current name from database
- * @method \phantomd\filedaemon\db\ActiveInterface resultSave() Save result to database
+ * @method ActiveInterface resultModel(array $params Data) Create result model with data from params
+ * @method ActiveInterface resultOne(array $params Condition) Get one result model by params from database
+ * @method ActiveInterface resultAll(array $params Condition) Get array of result models by params from database
+ * @method ActiveInterface resultNames(array $params Condition) Get result names from database
+ * @method ActiveInterface resultGroups(array $params Condition) Get result groups from database
+ * @method ActiveInterface resultRename(string $params New name) Rename all results which has current name
+ * @method ActiveInterface resultRemove() Delete all results with current name from database
+ * @method ActiveInterface resultSave() Save result to database
  *
- * @method \phantomd\filedaemon\db\ActiveInterface arcresultModel(array $params Data) Create arcresult model with data from params
- * @method \phantomd\filedaemon\db\ActiveInterface arcresultOne(array $params Condition) Get one arcresult model by params from database
- * @method \phantomd\filedaemon\db\ActiveInterface arcresultAll(array $params Condition) Get array of arcresult models by params from database
- * @method \phantomd\filedaemon\db\ActiveInterface arcresultNames(array $params Condition) Get arcresult names from database
- * @method \phantomd\filedaemon\db\ActiveInterface arcresultGroups(array $params Condition) Get arcresult groups from database
- * @method \phantomd\filedaemon\db\ActiveInterface arcresultRename(string $params New name) Change name for all arcresults which has current name
- * @method \phantomd\filedaemon\db\ActiveInterface arcresultRemove() Delete all arcresults with current name from database
- * @method \phantomd\filedaemon\db\ActiveInterface arcresultSave() Save arcresult to database
+ * @method ActiveInterface arcresultModel(array $params Data) Create arcresult model with data from params
+ * @method ActiveInterface arcresultOne(array $params Condition) Get one arcresult model by params from database
+ * @method ActiveInterface arcresultAll(array $params Condition) Get array of arcresult models by params from database
+ * @method ActiveInterface arcresultNames(array $params Condition) Get arcresult names from database
+ * @method ActiveInterface arcresultGroups(array $params Condition) Get arcresult groups from database
+ * @method ActiveInterface arcresultRename(string $params New name) Rename all arcresults which has current name
+ * @method ActiveInterface arcresultRemove() Delete all arcresults with current name from database
+ * @method ActiveInterface arcresultSave() Save arcresult to database
  *
- * @method \phantomd\filedaemon\db\ActiveInterface jobsModel(array $params Data) Create jobs model with data from params
- * @method \phantomd\filedaemon\db\ActiveInterface jobsOne(array $params Condition) Get one jobs model by params from database
- * @method \phantomd\filedaemon\db\ActiveInterface jobsAll(array $params Condition) Get array of jobs models by params from database
- * @method \phantomd\filedaemon\db\ActiveInterface jobsNames(array $params Condition) Get job names from database
- * @method \phantomd\filedaemon\db\ActiveInterface jobsGroups(array $params Condition) Get job groups from database
- * @method \phantomd\filedaemon\db\ActiveInterface jobsRename(string $params New name) Change name for all jobs which has current name
- * @method \phantomd\filedaemon\db\ActiveInterface jobsRemove() Delete all jobs with current name from database
- * @method \phantomd\filedaemon\db\ActiveInterface jobsSave() Save jobs to database
+ * @method ActiveInterface jobsModel(array $params Data) Create jobs model with data from params
+ * @method ActiveInterface jobsOne(array $params Condition) Get one jobs model by params from database
+ * @method ActiveInterface jobsAll(array $params Condition) Get array of jobs models by params from database
+ * @method ActiveInterface jobsNames(array $params Condition) Get job names from database
+ * @method ActiveInterface jobsGroups(array $params Condition) Get job groups from database
+ * @method ActiveInterface jobsRename(string $params New name) Rename all jobs which has current name
+ * @method ActiveInterface jobsRemove() Delete all jobs with current name from database
+ * @method ActiveInterface jobsSave() Save jobs to database
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */

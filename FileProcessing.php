@@ -2,9 +2,7 @@
 
 namespace phantomd\filedaemon;
 
-use yii\base\ErrorException;
 use yii\helpers\FileHelper;
-use yii\httpclient\Client;
 
 /**
  * Class FileProcessing. Base component for the file processing.

@@ -2,7 +2,6 @@
 
 namespace phantomd\filedaemon;
 
-use yii\base\ErrorException;
 use yii\helpers\StringHelper;
 use yii\helpers\FileHelper;
 

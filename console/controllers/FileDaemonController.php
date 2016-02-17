@@ -1,8 +1,9 @@
 <?php
 
-namespace phantomd\filedaemon\commands\controllers;
+namespace phantomd\filedaemon\console\controllers;
 
 use yii\helpers\FileHelper;
+use phantomd\filedaemon\console\controllers\StreakDaemonController;
 
 /**
  * Class FileDaemonController. Base file deamon controller for the extension.
