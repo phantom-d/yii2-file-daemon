@@ -112,7 +112,7 @@ return [
         'db'              => [
             'default' => [
                 'driver' => 'redis',
-                'db'     => require(__DIR__ . '/redis.php')
+                'db'     => require(__DIR__ . '/redis.php'),
             ],
             'config'  => [],
             'merge'   => [

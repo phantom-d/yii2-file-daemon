@@ -148,4 +148,25 @@ class Connection extends Component
         }
     }
 
+    /**
+     * Get current models
+     *
+     * @param string $model Model name
+     * @return mixed
+     */
+    public function getModels($model = '')
+    {
+        $return = $this->models;
+
+        if (false === empty($model)) {
+            if (isset($return[$model])) {
+                $return = $return[$model];
+            } else {
+                $return = '';
+            }
+        }
+
+        return $return;
+    }
+
 }
