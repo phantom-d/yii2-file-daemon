@@ -30,6 +30,21 @@ trait DaemonTrait
     protected $config = [];
 
     /**
+     * @var string Directory for substitution in the URL of the file
+     */
+    protected $dirWeb = '/uploads/files';
+
+    /**
+     * @var string Temp directory
+     */
+    protected $dirSource = '@app/temp';
+
+    /**
+     * @var string Directory for results
+     */
+    protected $dirTarget = '@app';
+
+    /**
      * @var mixed Path to directory where placed configuration files. Can be _string_ or _array_
      */
     protected $configPath = [
@@ -237,6 +252,20 @@ trait DaemonTrait
             if (isset($params[$this->configName]['sleep']) && isset($this->sleep)) {
                 $this->sleep = (int)$params[$this->configName]['sleep'];
             }
+
+            if (false === isset($params[$this->configName]['directories'])) {
+                $params[$this->configName]['directories'] = [];
+            }
+            if (false === isset($params[$this->configName]['directories']['web'])) {
+                $params[$this->configName]['directories']['web'] = $this->dirWeb;
+            }
+            if (false === isset($params[$this->configName]['directories']['source'])) {
+                $params[$this->configName]['directories']['source'] = $this->dirSource;
+            }
+            if (false === isset($params[$this->configName]['directories']['target'])) {
+                $params[$this->configName]['directories']['target'] = $this->dirTarget;
+            }
+
 
             $this->config     = $params[$this->configName];
             $this->_shortName = $this->configName;

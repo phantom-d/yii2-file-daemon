@@ -8,6 +8,5 @@ Getting Started
 ---------------
 
 * [Установка](installation.md)
+* [Структура файла конфигурации демонов](daemons.php.md)
 * [Расширенная настройка приложения](configuring-advanced.md)
- * [Структура файла конфигурации демонов](daemons.php.md)
-
