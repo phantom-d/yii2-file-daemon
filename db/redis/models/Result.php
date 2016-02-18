@@ -17,7 +17,8 @@ class Result extends SortedsetModel
     {
         return [
             [['object_id', 'file_name', 'time_dir',], 'required'],
-            [['command', 'object_id', 'file_id', 'file_name', 'time_dir',], 'string'],
+            [['command', ], 'integer'],
+            [['object_id', 'file_id', 'file_name', 'time_dir',], 'string'],
             [['command', 'object_id', 'file_id', 'score',], 'default', 'value' => 0],
             [['file_name', 'time_dir',], 'default', 'value' => ''],
         ];

@@ -17,7 +17,8 @@ class Source extends SortedsetModel
     {
         return [
             [['object_id', 'url',], 'required'],
-            [['command', 'object_id', 'url', 'file_id',], 'string'],
+            [['command', ], 'integer'],
+            [['object_id', 'url', 'file_id',], 'string'],
             ['url', 'url', 'enableIDN' => true, 'message' => \Yii::t('yii', "{attribute} is not a valid URL!")],
             [['command', 'object_id', 'file_id', 'score',], 'default', 'value' => 0],
             [['url',], 'default', 'value' => ''],

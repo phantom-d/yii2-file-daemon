@@ -40,7 +40,7 @@ class ConnectionTest extends TestCase
         $this->assertNotNull($this->adapter, 'Could not initialize database manager!');
 
         $data = [
-            'command'   => '0',
+            'command'   => 0,
             'object_id' => 'test_object',
             'url'       => 'https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png',
             'file_id'   => 'test_file',
@@ -49,9 +49,37 @@ class ConnectionTest extends TestCase
         ];
 
         $model = $this->adapter->sourceModel($data);
+        $class = $this->adapter->getModels('source');
+
+        $this->assertTrue($model instanceof $class, 'It is not source model!');
 
         $this->assertTrue($model->save(), 'Save source errors: ' . print_r($model->getErrors(), true));
-        $this->assertTrue((bool)$model->delete(), "Could not delete source!");
+        $this->assertEquals(0, $model->insert(), 'Insert source errors: ' . print_r($model->getErrors(), true));
+
+        $this->assertFalse($model->update(), 'Update source errors: ' . print_r($model->getErrors(), true));
+        $model->file_id = 'test_file1';
+        $this->assertTrue($model->update(), 'Update source errors: ' . print_r($model->getErrors(), true));
+
+        $this->assertNotEmpty($this->adapter->sourceAll($data), 'Error get source all!');
+        $this->assertNotEmpty($this->adapter->sourceOne($data['name']), 'Error get source one!');
+
+        $this->assertEquals(1, $this->adapter->sourceCount($data['name']), 'Error count source!');
+
+        $this->assertNotEmpty($this->adapter->sourceNames(), 'Error get names!');
+
+        $this->assertNotEmpty($this->adapter->sourceGroups(), 'Error get groups!');
+
+        $this->assertFalse($model->rename([$data['name'] . '_']), "Error check rename params!");
+        $this->assertTrue($model->rename($data['name'] . '_'), "Could not rename source!");
+
+        $this->assertTrue($model->delete(), "Could not delete source!");
+
+        $data['command'] = 1;
+
+        $model = $this->adapter->sourceModel($data);
+        $model->save();
+
+        $this->assertTrue($model->remove(), 'Remove source errors: ' . print_r($model->getErrors(), true));
     }
 
 }
