@@ -60,14 +60,14 @@ class ConnectionTest extends TestCase
         $model->file_id = 'test_file1';
         $this->assertTrue($model->update(), 'Update source errors: ' . print_r($model->getErrors(), true));
 
-        $this->assertNotEmpty($this->adapter->sourceAll($data), 'Error get source all!');
-        $this->assertNotEmpty($this->adapter->sourceOne($data['name']), 'Error get source one!');
+        $this->assertNotEmpty($model->all($data), 'Error get source all!');
+        $this->assertNotEmpty($model->one($data['name']), 'Error get source one!');
 
-        $this->assertEquals(1, $this->adapter->sourceCount($data['name']), 'Error count source!');
+        $this->assertEquals(1, $model->count($data['name']), 'Error count source!');
 
-        $this->assertNotEmpty($this->adapter->sourceNames(), 'Error get names!');
+        $this->assertNotEmpty($model->names(), 'Error get names!');
 
-        $this->assertNotEmpty($this->adapter->sourceGroups(), 'Error get groups!');
+        $this->assertNotEmpty($model->groups(), 'Error get groups!');
 
         $this->assertFalse($model->rename([$data['name'] . '_']), "Error check rename params!");
         $this->assertTrue($model->rename($data['name'] . '_'), "Could not rename source!");
