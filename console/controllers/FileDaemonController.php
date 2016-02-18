@@ -642,7 +642,7 @@ class FileDaemonController extends StreakDaemonController
         if ($return) {
             $itemDst = [
                 'name'      => $this->itemData['table'],
-                'command'   => (string)$this->itemData['command'],
+                'command'   => $this->itemData['command'],
                 'file_name' => $this->itemData['file'],
                 'file_id'   => $this->itemData['file_id'],
                 'object_id' => $this->itemData['object_id'],
