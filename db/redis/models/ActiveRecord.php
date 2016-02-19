@@ -160,6 +160,42 @@ class ActiveRecord extends \yii\redis\ActiveRecord implements \phantomd\filedaem
     /**
      * @inheritdoc
      */
+    public function insert($runValidation = true, $attributeNames = null)
+    {
+        $changedAttributes = $this->getDirtyAttributes($attributeNames);
+        if (empty($changedAttributes)) {
+            $this->afterSave(false, $changedAttributes);
+            return 0;
+        }
+
+        return parent::insert($runValidation, $attributeNames);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function update($runValidation = true, $attributeNames = null)
+    {
+        $changedAttributes = $this->getDirtyAttributes($attributeNames);
+        if (empty($changedAttributes)) {
+            $this->afterSave(false, $changedAttributes);
+            return 0;
+        }
+
+        return (bool)parent::update($runValidation, $attributeNames);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function delete()
+    {
+        return (bool)parent::delete();
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function rename($params = [])
     {
         throw new NotSupportedException();

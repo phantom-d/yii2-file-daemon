@@ -247,9 +247,9 @@ class HashModel extends ActiveModel
                 $attributes['name'],
             ];
 
-            $result = $db->executeCommand('hdel', $query);
+            $result = (bool)$db->executeCommand('hdel', $query);
 
-            $this->_oldAttributes = null;
+            $this->setOldAttributes(null);
             $this->afterDelete();
         }
 

@@ -217,7 +217,7 @@ class SortedsetModel extends ActiveModel
      */
     public function update($runValidation = true, $attributeNames = null)
     {
-        $return = false;
+        $return = 0;
         if ($this->getDirtyAttributes($attributeNames)) {
             $model  = clone $this;
             if ($return = $this->insert($runValidation, $attributeNames)) {
