@@ -55,7 +55,7 @@ return [
     'fields'    => [
         'source'    => 'file_id',
         'result'    => 'file_id',
-        'arcresult' => 'name',
+        'arcresult' => 'path',
         'jobs'      => 'name',
     ],
     'test'      => [
