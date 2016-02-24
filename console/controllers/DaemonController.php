@@ -334,7 +334,7 @@ abstract class DaemonController extends Controller
      */
     public static function stop()
     {
-        $this->beforeStop();
+        static::beforeStop();
         self::$stopFlag = 1;
     }
 
@@ -582,7 +582,7 @@ abstract class DaemonController extends Controller
     /**
      * Event before stop daemon
      */
-    protected function beforeStop()
+    protected static function beforeStop()
     {
         return true;
     }

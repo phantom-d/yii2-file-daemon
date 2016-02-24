@@ -91,7 +91,7 @@ class FileDaemonController extends StreakDaemonController
     /**
      * Force restart daemon threads
      */
-    protected function beforeStop()
+    protected static function beforeStop()
     {
         \Yii::info('Do restart - start!', __METHOD__ . '(' . __LINE__ . ')');
         foreach ($this->jobListData as $id) {
