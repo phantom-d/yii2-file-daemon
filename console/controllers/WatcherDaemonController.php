@@ -119,7 +119,7 @@ class WatcherDaemonController extends StreakDaemonController
 
         if ($job['enabled']) {
             YII_DEBUG && \Yii::info('Try to run daemon ' . $job['className'] . '.');
-            $command_name = $this->getCommandNameBy($job['className']);
+            $command = $this->getCommandNameBy($job['className']);
 
             //flush log before fork
             \Yii::$app->getLog()->getLogger()->flush(true);
@@ -128,16 +128,18 @@ class WatcherDaemonController extends StreakDaemonController
             $pid = pcntl_fork();
 
             if ($pid == -1) {
-                $this->halt(self::EXIT_CODE_ERROR, 'pcntl_fork() returned error');
+                $this->halt(self::EXIT_CODE_ERROR, 'pcntl_fork() returned error.');
             } elseif (!$pid) {
                 $this->initLogger();
                 YII_DEBUG && \Yii::info('Daemon ' . $job['className'] . ' is running.');
             } else {
-                $result = \Yii::$app->runAction("$command_name", ['demonize' => 1]);
-                $this->halt(
-                    (0 === $result ? self::EXIT_CODE_NORMAL : self::EXIT_CODE_ERROR
-                    )
-                );
+                if (\Yii::$app->createController($command)) {
+                    $result = \Yii::$app->runAction($command, ['demonize' => 1]);
+                    $this->halt(
+                        (0 === $result ? self::EXIT_CODE_NORMAL : self::EXIT_CODE_ERROR)
+                    );
+                }
+                $this->halt(self::EXIT_CODE_ERROR, 'Daemon ' . $job['className'] . ' not found.');
             }
         }
         YII_DEBUG && \Yii::info('Daemon ' . $job['className'] . ' is checked.');

@@ -20,7 +20,6 @@ class StreakConsoleController extends Controller
      */
     public function runAction($id, $params = [])
     {
-        $params = \Yii::$app->request->get();
         if (false === empty($params['id'])) {
             static::$configAlias = $params['id'];
         }
@@ -34,6 +33,26 @@ class StreakConsoleController extends Controller
         $this->reloadComponent();
 
         return parent::runAction($id, $params);
+    }
+
+    public function options($actionID)
+    {
+        return [
+            'id',
+        ];
+    }
+
+    public function getActionOptionsHelp($actionID)
+    {
+        $name = $this->ansiFormat('$configAlias', \yii\helpers\Console::FG_GREEN);
+        return [
+            'id' => [
+                'type'    => 'string',
+                'default' => null,
+                'comment' => "Daemon name for get component config.\n"
+                . "If not set, controller property {$name} is used.",
+            ],
+        ];
     }
 
 }
