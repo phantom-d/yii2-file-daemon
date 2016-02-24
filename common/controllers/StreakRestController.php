@@ -32,7 +32,7 @@ class StreakRestController extends Controller
         ];
 
         $rulesIps = [];
-        if (empty(\Yii::$app->params['secret']['allowIPs'])) {
+        if (false === empty(\Yii::$app->params['secret']['allowIPs'])) {
             $rulesIps = \Yii::$app->params['secret']['allowIPs'];
         }
 

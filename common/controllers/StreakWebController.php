@@ -24,7 +24,7 @@ class StreakWebController extends Controller
         $behaviors = parent::behaviors();
 
         $rulesIps = [];
-        if (empty(\Yii::$app->params['secret']['allowIPs'])) {
+        if (false === empty(\Yii::$app->params['secret']['allowIPs'])) {
             $rulesIps = \Yii::$app->params['secret']['allowIPs'];
         }
 
