@@ -96,9 +96,11 @@ class ImageDaemonController extends StreakRestController
         $sources = array_chunk($data, $this->maxPostCount);
 
         $countJobs = 0;
+        $jobsModel = static::$component->jobsModel();
+
         foreach ($sources as $source) {
             static::$component->addSource($name, $source);
-            if (static::$component->addJob($name, $callback, \app\models\Joblist::STATUS_WAIT)) {
+            if (static::$component->addJob($name, $callback, $jobsModel::STATUS_WAIT)) {
                 ++$countJobs;
             }
         }
