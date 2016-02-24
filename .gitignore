@@ -41,3 +41,4 @@ composer.lock
 
 tests/codeception/_output/*
 tests/runtime/*
+docs/api/*
