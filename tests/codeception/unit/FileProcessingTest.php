@@ -10,13 +10,13 @@ class FileProcessingTest extends TestCase
     /**
      * @var \phantomd\filedaemon\FileProcessing FileProcessing
      */
-    protected static $component = '\phantomd\filedaemon\FileProcessing';
+    protected static $component = null;
 
     protected function setUp()
     {
         parent::setUp();
         $params            = [
-            'class'  => static::$component,
+            'class'  => '\phantomd\filedaemon\FileProcessing',
             'config' => \Yii::$app->params['daemons']['image-server'],
         ];
         static::$component = \Yii::createObject($params);
@@ -45,6 +45,16 @@ class FileProcessingTest extends TestCase
         $name = 'test_source::' . microtime(true);
         $this->assertTrue(static::$component->addSource($name, $data), 'Error adding source data to database!');
         $db->flushdb();
+    }
+
+    public function testGetWebClient()
+    {
+        $this->assertNotNull(static::$component, 'Could not initialize component!');
+
+        $webClient = static::$component->getWebClient();
+        $this->assertNotEmpty($webClient);
+
+        return $webClient;
     }
 
 }
