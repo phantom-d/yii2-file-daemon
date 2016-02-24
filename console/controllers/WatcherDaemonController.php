@@ -53,7 +53,7 @@ class WatcherDaemonController extends StreakDaemonController
     /**
      * @inheritdoc
      */
-    protected function beforeRestart()
+    protected function beforeStop()
     {
         foreach ($this->config['daemons'] as $key => $value) {
             if ($value['enabled']) {

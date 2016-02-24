@@ -89,7 +89,7 @@ abstract class DaemonController extends Controller
     /**
      * @var string Short class name
      */
-    private $shortName = '';
+    protected $shortName = '';
 
     /**
      * Init function
@@ -106,7 +106,7 @@ abstract class DaemonController extends Controller
         pcntl_signal(SIGUSR2, [__CLASS__, 'signalHandler']);
         pcntl_signal(SIGCHLD, [__CLASS__, 'signalHandler']);
 
-        $this->shortName = $this->shortClassName();
+        $this->shortName = $this->getConfigName($this->shortClassName(), 'Daemon');
         $this->setConfigName();
     }
 
@@ -123,7 +123,7 @@ abstract class DaemonController extends Controller
         $logFileName = \Yii::getAlias($this->logDir)
             . DIRECTORY_SEPARATOR . $this->getConfigName($this->shortClassName(), 'Daemon')
             . DIRECTORY_SEPARATOR . $date
-            . DIRECTORY_SEPARATOR . $this->_shortName . '_' . $date . '.log';
+            . DIRECTORY_SEPARATOR . $this->shortName . '_' . $date . '.log';
 
         $config          = [
             'class'   => '\phantomd\filedaemon\components\FileTarget',
@@ -334,6 +334,7 @@ abstract class DaemonController extends Controller
      */
     public static function stop()
     {
+        $this->beforeStop();
         self::$stopFlag = 1;
     }
 
@@ -576,6 +577,14 @@ abstract class DaemonController extends Controller
                 throw new NotSupportedException("Can't find cli_set_process_title or setproctitle function");
             }
         }
+    }
+
+    /**
+     * Event before stop daemon
+     */
+    protected function beforeStop()
+    {
+        return true;
     }
 
 }

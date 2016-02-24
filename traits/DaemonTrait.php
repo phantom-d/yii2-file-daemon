@@ -20,11 +20,6 @@ trait DaemonTrait
 {
 
     /**
-     * @var string Name of current process
-     */
-    protected $_shortName = '';
-
-    /**
      * @var array Daemon configuration
      */
     protected $config = [];
@@ -126,28 +121,15 @@ trait DaemonTrait
     }
 
     /**
-     * Event before restart daemon
-     */
-    protected function beforeRestart()
-    {
-        return true;
-    }
-
-    /**
      * Restart current daemon
      */
     protected function restart()
     {
         $return = false;
 
-        $fileRestart = FileHelper::normalizePath(
-                \Yii::getAlias(
-                    $this->configPath . DIRECTORY_SEPARATOR . "restart-{$this->configName}"
-                )
-        );
+        $fileRestart = $this->configPath . DIRECTORY_SEPARATOR . "restart-{$this->configName}";
 
         if (is_file($fileRestart)) {
-            $this->beforeRestart();
             unlink($fileRestart);
             static::stop();
             $return = true;
@@ -235,6 +217,7 @@ trait DaemonTrait
                 $config = include $fileConfig;
                 if (false === empty($config) && is_array($config)) {
                     $params = array_merge($params, $config);
+
                     $this->configPath = FileHelper::normalizePath(\Yii::getAlias($this->configPath));
                 }
             }
@@ -272,7 +255,7 @@ trait DaemonTrait
 
 
             $this->config     = $params[$this->configName];
-            $this->_shortName = $this->configName;
+            $this->shortName = $this->configName;
         }
 
         return $this->config;

@@ -91,7 +91,7 @@ class FileDaemonController extends StreakDaemonController
     /**
      * Force restart daemon threads
      */
-    protected function beforeRestart()
+    protected function beforeStop()
     {
         \Yii::info('Do restart - start!', __METHOD__ . '(' . __LINE__ . ')');
         foreach ($this->jobListData as $id) {
@@ -291,7 +291,7 @@ class FileDaemonController extends StreakDaemonController
      */
     protected function doJob($job)
     {
-        $jobModel = $this->component->jobsOne($jobId);
+        $jobModel = $this->component->jobsOne($job);
 
         if ($jobModel && $jobModel->statusWork) {
             $jobModel->pid = getmypid();
@@ -300,7 +300,7 @@ class FileDaemonController extends StreakDaemonController
             $this->initLogger();
             $this->renameProcess();
 
-            \Yii::info('Do job - start("' . $jobId . '")! PID: ' . $jobModel->pid, __METHOD__ . '(' . __LINE__ . ')');
+            \Yii::info('Do job - start("' . $job . '")! PID: ' . $jobModel->pid, __METHOD__ . '(' . __LINE__ . ')');
 
             $jobModel->status = $jobModel::STATUS_WORK;
             $jobModel->save();
@@ -336,10 +336,10 @@ class FileDaemonController extends StreakDaemonController
                 }
             }
 
-            $this->component->transfer($jobId);
+            $this->component->transfer($job);
         }
 
-        \Yii::info('Do job - end ("' . $jobId . '")! PID: ' . $jobModel->pid, __METHOD__ . '(' . __LINE__ . ')');
+        \Yii::info('Do job - end ("' . $job . '")! PID: ' . $jobModel->pid, __METHOD__ . '(' . __LINE__ . ')');
         return true;
     }
 
