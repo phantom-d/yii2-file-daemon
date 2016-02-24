@@ -218,6 +218,9 @@ trait DaemonTrait
                     $config = include $fileConfig;
                     if (false === empty($config) && is_array($config)) {
                         $params = array_merge($params, $config);
+
+                        $this->configPath = FileHelper::normalizePath(\Yii::getAlias($configPath));
+                        break;
                     }
                 }
             }
@@ -232,6 +235,7 @@ trait DaemonTrait
                 $config = include $fileConfig;
                 if (false === empty($config) && is_array($config)) {
                     $params = array_merge($params, $config);
+                    $this->configPath = FileHelper::normalizePath(\Yii::getAlias($this->configPath));
                 }
             }
         }

@@ -74,11 +74,7 @@ class WatcherDaemonController extends StreakDaemonController
         }
 
         if (strtotime(date('Y-m-d 00:00:00')) > $this->currentDate) {
-            $fileRestart = FileHelper::normalizePath(
-                    \Yii::getAlias(
-                        $this->configPath . DIRECTORY_SEPARATOR . "restart-{$this->configName}"
-                    )
-            );
+            $fileRestart = $this->configPath . DIRECTORY_SEPARATOR . "restart-{$this->configName}";
             file_put_contents($fileRestart, '');
         }
 
