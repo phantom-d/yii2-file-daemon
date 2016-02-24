@@ -15,7 +15,7 @@ class FileProcessingTest extends TestCase
     protected function setUp()
     {
         parent::setUp();
-        $params          = [
+        $params            = [
             'class'  => static::$component,
             'config' => \Yii::$app->params['daemons']['image-server'],
         ];
@@ -45,15 +45,6 @@ class FileProcessingTest extends TestCase
         $name = 'test_source::' . microtime(true);
         $this->assertTrue(static::$component->addSource($name, $data), 'Error adding source data to database!');
         $db->flushdb();
-    }
-
-    public function testGetWebClient()
-    {
-
-        $webClient = static::$component->getWebClient();
-        $this->assertNotEmpty($webClient);
-
-        return $webClient;
     }
 
 }
