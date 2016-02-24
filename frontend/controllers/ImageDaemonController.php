@@ -97,8 +97,8 @@ class ImageDaemonController extends StreakRestController
 
         $countJobs = 0;
         foreach ($sources as $source) {
-            $this->component->addSource($name, $source);
-            if ($this->component->addJob($name, $callback, \app\models\Joblist::STATUS_WAIT)) {
+            static::$component->addSource($name, $source);
+            if (static::$component->addJob($name, $callback, \app\models\Joblist::STATUS_WAIT)) {
                 ++$countJobs;
             }
         }
@@ -119,8 +119,8 @@ class ImageDaemonController extends StreakRestController
      */
     public function actionView($url)
     {
-        if ($path = $this->component->getImageByUri($url)) {
-            header('Content-Type: image/' . $this->config['extension']);
+        if ($path = static::$component->getImageByUri($url)) {
+            header('Content-Type: image/' . static::$config['extension']);
             exit(file_get_contents($path));
         }
         throw new NotFoundHttpException(\Yii::t('yii', 'Unknown image!'));

@@ -55,9 +55,9 @@ class WatcherDaemonController extends StreakDaemonController
      */
     protected static function beforeStop()
     {
-        foreach ($this->config['daemons'] as $key => $value) {
+        foreach (static::$config['daemons'] as $key => $value) {
             if ($value['enabled']) {
-                $this->config['daemons'][$key]['enabled'] = false;
+                static::$config['daemons'][$key]['enabled'] = false;
             }
         }
     }
@@ -69,7 +69,7 @@ class WatcherDaemonController extends StreakDaemonController
     {
         $this->getConfig();
 
-        if (empty($this->config['daemons'])) {
+        if (empty(static::$config['daemons'])) {
             return [];
         }
 
@@ -80,7 +80,7 @@ class WatcherDaemonController extends StreakDaemonController
 
         $this->restart();
 
-        return $this->config['daemons'];
+        return static::$config['daemons'];
     }
 
     /**
@@ -88,12 +88,14 @@ class WatcherDaemonController extends StreakDaemonController
      */
     protected function doJob($job)
     {
-        $pidfile = \Yii::getAlias($this->pidDir) . DIRECTORY_SEPARATOR . $job['className'];
+        $configName = $this->getConfigName($job['className'], ['Daemon']);
+        $pidfile = \Yii::getAlias($this->pidDir . DIRECTORY_SEPARATOR . $configName);
 
         YII_DEBUG && \Yii::info('Check daemon ' . $job['className']);
+        YII_DEBUG && \Yii::info($pidfile);
         if (file_exists($pidfile)) {
             $pid = file_get_contents($pidfile);
-            if ($this->isProcessRunning($pid, $this->getConfigName($job['className'], ['Daemon']))) {
+            if ($this->isProcessRunning($pid, $configName)) {
                 if ($job['enabled']) {
                     if (YII_DEBUG) {
                         \Yii::info("Daemon '{$job['className']}', PID: {$pid} running and working fine");
@@ -109,6 +111,7 @@ class WatcherDaemonController extends StreakDaemonController
                     return true;
                 }
             }
+            unlink($pidfile);
         }
 
         YII_DEBUG && \Yii::info('Daemon ' . $job['className'] . ' pid not found.');

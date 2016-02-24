@@ -10,21 +10,21 @@ class FileProcessingTest extends TestCase
     /**
      * @var \phantomd\filedaemon\FileProcessing FileProcessing
      */
-    protected $component = '\phantomd\filedaemon\FileProcessing';
+    protected static $component = '\phantomd\filedaemon\FileProcessing';
 
     protected function setUp()
     {
         parent::setUp();
         $params          = [
-            'class'  => $this->component,
+            'class'  => static::$component,
             'config' => \Yii::$app->params['daemons']['image-server'],
         ];
-        $this->component = \Yii::createObject($params);
+        static::$component = \Yii::createObject($params);
     }
 
     public function testAddSource()
     {
-        $this->assertNotNull($this->component, 'Could not initialize component!');
+        $this->assertNotNull(static::$component, 'Could not initialize component!');
 
         $data = [
             'command'   => '0',
@@ -33,7 +33,7 @@ class FileProcessingTest extends TestCase
             'file_id'   => 'test_file',
         ];
 
-        $model = $this->component->sourceModel();
+        $model = static::$component->sourceModel();
         $db    = $model->getDb();
 
         $this->assertNotEmpty($db, 'Error initialize component connection!');
@@ -43,14 +43,14 @@ class FileProcessingTest extends TestCase
         $this->assertTrue($db->isActive, 'Error connection to database!');
 
         $name = 'test_source::' . microtime(true);
-        $this->assertTrue($this->component->addSource($name, $data), 'Error adding source data to database!');
+        $this->assertTrue(static::$component->addSource($name, $data), 'Error adding source data to database!');
         $db->flushdb();
     }
 
     public function testGetWebClient()
     {
 
-        $webClient = $this->component->getWebClient();
+        $webClient = static::$component->getWebClient();
         $this->assertNotEmpty($webClient);
 
         return $webClient;

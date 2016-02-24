@@ -26,7 +26,7 @@ class StreakConsoleController extends Controller
         $this->configName = empty(static::$configAlias) ? '' : static::$configAlias;
         $this->getConfig();
 
-        if (empty($this->config)) {
+        if (empty(static::$config)) {
             throw new InvalidParamException(\Yii::t('yii', 'Unknown daemon ID!'));
         }
 

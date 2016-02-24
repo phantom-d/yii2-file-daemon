@@ -106,7 +106,7 @@ abstract class DaemonController extends Controller
         pcntl_signal(SIGUSR2, [__CLASS__, 'signalHandler']);
         pcntl_signal(SIGCHLD, [__CLASS__, 'signalHandler']);
 
-        $this->shortName = $this->getConfigName($this->shortClassName(), 'Daemon');
+        $this->shortName = $this->getConfigName($this->shortClassName(), ['Daemon']);
         $this->setConfigName();
     }
 
@@ -121,7 +121,7 @@ abstract class DaemonController extends Controller
         }
         $date        = date('Y-m-d');
         $logFileName = \Yii::getAlias($this->logDir)
-            . DIRECTORY_SEPARATOR . $this->getConfigName($this->shortClassName(), 'Daemon')
+            . DIRECTORY_SEPARATOR . $this->getConfigName($this->shortClassName(), ['Daemon'])
             . DIRECTORY_SEPARATOR . $date
             . DIRECTORY_SEPARATOR . $this->shortName . '_' . $date . '.log';
 

@@ -16,7 +16,7 @@ class FileDaemonController extends StreakDaemonController
     /**
      * @var array Array threading jobs
      */
-    protected $jobListData = [];
+    protected static $jobListData = [];
 
     /**
      * @var array Array source item for processing
@@ -53,9 +53,9 @@ class FileDaemonController extends StreakDaemonController
      */
     protected function checkJoblist()
     {
-        foreach ($this->jobListData as $key => $jobId) {
+        foreach (static::$jobListData as $key => $jobId) {
             if (false === $this->checkJob($jobId)) {
-                unset($this->jobListData[$key]);
+                unset(static::$jobListData[$key]);
             }
         }
     }
@@ -76,7 +76,7 @@ class FileDaemonController extends StreakDaemonController
         if (is_object($id) && $id instanceof \phantomd\filedaemon\db\ActiveInterface) {
             $job = $id;
         } else {
-            $job = $this->component->jobsOne($id);
+            $job = static::$component->jobsOne($id);
         }
 
         if ($job && $job->pid) {
@@ -89,14 +89,14 @@ class FileDaemonController extends StreakDaemonController
     }
 
     /**
-     * Force restart daemon threads
+     * Force stop daemon threads
      */
     protected static function beforeStop()
     {
         \Yii::info('Do restart - start!', __METHOD__ . '(' . __LINE__ . ')');
-        foreach ($this->jobListData as $id) {
+        foreach (static::$jobListData as $id) {
             $keys = 0;
-            $job  = $this->component->jobsOne($id);
+            $job  = static::$component->jobsOne($id);
             if ($job) {
                 $job->status = $job::STATUS_RESTART;
                 $job->save();
@@ -119,11 +119,11 @@ class FileDaemonController extends StreakDaemonController
             return $return;
         }
 
-        if ($this->component->addJobs()) {
+        if (static::$component->addJobs()) {
             \Yii::info('Created new jobs.', __METHOD__ . '(' . __LINE__ . ')');
         }
 
-        $this->component->transferResults();
+        static::$component->transferResults();
         YII_DEBUG && \Yii::info('Transfer results done.', __METHOD__ . '(' . __LINE__ . ')');
 
         $this->checkJoblist();
@@ -131,11 +131,11 @@ class FileDaemonController extends StreakDaemonController
 
         $jobs         = [];
         $threads      = [];
-        $maxProcesses = (int)$this->config['child-processes'];
+        $maxProcesses = (int)static::$config['child-processes'];
         $limitCurrent = 0;
 
-        if (count($this->jobListData) < $maxProcesses && $groups = $this->component->sourceGroups()) {
-            $limitProcesses = $maxProcesses - count($this->jobListData);
+        if (count(static::$jobListData) < $maxProcesses && $groups = static::$component->sourceGroups()) {
+            $limitProcesses = $maxProcesses - count(static::$jobListData);
             $limitTreads    = $this->maxThreads;
             $limit          = $limitTreads;
 
@@ -151,7 +151,7 @@ class FileDaemonController extends StreakDaemonController
                     break;
                 }
 
-                $jobsModel = $this->component->jobsModel();
+                $jobsModel = static::$component->jobsModel();
                 $where     = [
                     'group'  => $group,
                     'status' => [
@@ -175,7 +175,7 @@ class FileDaemonController extends StreakDaemonController
             }
         }
 
-        $jobsModel = $this->component->jobsModel();
+        $jobsModel = static::$component->jobsModel();
 
         $page  = 0;
         $where = [
@@ -201,7 +201,7 @@ class FileDaemonController extends StreakDaemonController
                     if ($model->complete === $model->total) {
                         $model->status = $model::STATUS_COMPLETE;
                     } else {
-                        $source = $this->component->sourceOne($model->name);
+                        $source = static::$component->sourceOne($model->name);
                         if (empty($source)) {
                             $model->status = $model::STATUS_ERROR;
                         }
@@ -211,9 +211,9 @@ class FileDaemonController extends StreakDaemonController
 
                 // Очистка контейнера со списком потоков и удаление потоков
                 if (false === $this->checkJob($model) && false === $model->statusWork) {
-                    $this->component->transfer($jobId);
-                    if (false !== ($delete = array_search($jobId, $this->jobListData))) {
-                        unset($this->jobListData[$delete]);
+                    static::$component->transfer($jobId);
+                    if (false !== ($delete = array_search($jobId, static::$jobListData))) {
+                        unset(static::$jobListData[$delete]);
                     }
 
                     if ($model::STATUS_RESTART === (int)$model->status) {
@@ -232,11 +232,11 @@ class FileDaemonController extends StreakDaemonController
             }
         }
 
-        YII_DEBUG && \Yii::info([$this->jobListData], __METHOD__ . '(' . __LINE__ . ') --- $this->jobListData');
+        YII_DEBUG && \Yii::info([static::$jobListData], __METHOD__ . '(' . __LINE__ . ') --- static::$jobListData');
 
         if ($jobs) {
             foreach ($jobs as $job) {
-                if (count($this->jobListData) >= $maxProcesses) {
+                if (count(static::$jobListData) >= $maxProcesses) {
                     break;
                 }
                 $jobId    = $job->id;
@@ -246,32 +246,32 @@ class FileDaemonController extends StreakDaemonController
 
                 if (false === empty($threads[$jobGroup])) {
                     foreach ($threads[$jobGroup] as $value) {
-                        if (in_array($value, $this->jobListData)) {
+                        if (in_array($value, static::$jobListData)) {
                             ++$countJobs;
                         }
                     }
                 }
 
                 // Добавление задач в контейнер потоков
-                if ($countJobs < (int)$this->config['max-threads']) {
+                if ($countJobs < (int)static::$config['max-threads']) {
                     if ($this->checkJob($jobId)) {
-                        if (false === in_array($jobId, $this->jobListData)) {
-                            $this->jobListData[] = $jobId;
+                        if (false === in_array($jobId, static::$jobListData)) {
+                            static::$jobListData[] = $jobId;
                         }
                     } else {
                         $return[] = $jobId;
-                        if (in_array($jobId, $this->jobListData)) {
-                            $this->component->transfer($jobId);
+                        if (in_array($jobId, static::$jobListData)) {
+                            static::$component->transfer($jobId);
                         } else {
-                            $this->jobListData[] = $jobId;
+                            static::$jobListData[] = $jobId;
                         }
                     }
                 }
             }
         }
 
-        if (empty($this->jobListData)) {
-            $files = FileHelper::findFiles(\Yii::getAlias('@app/temp/'), ['except' => ['\.gitignore']]);
+        if (empty(static::$jobListData)) {
+            $files = FileHelper::findFiles(\Yii::getAlias(static::$config['directories']['source']), ['except' => ['\.gitignore']]);
             if ($files) {
                 foreach ($files as $file) {
                     if (false === is_dir($file) && 0 === (int)filesize($file)) {
@@ -291,7 +291,7 @@ class FileDaemonController extends StreakDaemonController
      */
     protected function doJob($job)
     {
-        $jobModel = $this->component->jobsOne($job);
+        $jobModel = static::$component->jobsOne($job);
 
         if ($jobModel && $jobModel->statusWork) {
             $jobModel->pid = getmypid();
@@ -336,7 +336,7 @@ class FileDaemonController extends StreakDaemonController
                 }
             }
 
-            $this->component->transfer($job);
+            static::$component->transfer($job);
         }
 
         \Yii::info('Do job - end ("' . $job . '")! PID: ' . $jobModel->pid, __METHOD__ . '(' . __LINE__ . ')');
@@ -362,14 +362,14 @@ class FileDaemonController extends StreakDaemonController
         $jobComplete = $job->complete;
 
         $startItem   = microtime(true);
-        $sourceTotal = $this->component->sourceCount($job->name);
+        $sourceTotal = static::$component->sourceCount($job->name);
 
         if ($sourceTotal > $jobTotal) {
             $jobTotal = $sourceTotal;
         }
 
         // * Start file processing
-        if ($item = $this->component->sourceOne($job->name, true)) {
+        if ($item = static::$component->sourceOne($job->name, true)) {
             YII_DEBUG && \Yii::info(print_r($item->toArray(), true), __METHOD__ . '(' . __LINE__ . ') --- $item');
 
             if (false === $this->doFile($item, $job->group . '::' . $jobId)) {
@@ -433,7 +433,7 @@ class FileDaemonController extends StreakDaemonController
 
         YII_DEBUG && \Yii::info(print_r($item->toArray(), true), __METHOD__ . '(' . __LINE__ . ') --- $item');
 
-        if ($file = $this->component->getFileName($item->url)) {
+        if ($file = static::$component->getFileName($item->url)) {
 
             YII_DEBUG && \Yii::info([$file], __METHOD__ . '(' . __LINE__ . ') --- $file');
 
@@ -443,9 +443,9 @@ class FileDaemonController extends StreakDaemonController
             }
 
             $fileName = md5($item->object_id . $file['file']);
-            $tmpName  = tempnam(\Yii::getAlias($this->config['directories']['source']), $this->configName);
+            $tmpName  = tempnam(\Yii::getAlias(static::$config['directories']['source']), $this->configName);
 
-            if ($arcresult = $this->component->arcresultOne($fileName)) {
+            if ($arcresult = static::$component->arcresultOne($fileName)) {
                 $path = $arcresult->path;
             }
 
@@ -464,10 +464,10 @@ class FileDaemonController extends StreakDaemonController
                 'file_id'       => $item->file_id,
                 'object_id'     => $item->object_id,
                 'score'         => $item->score,
-                'directories'   => $this->config['directories'],
-                'extension'     => isset($this->config['extension']) ? $this->config['extension'] : '',
-                'quality'       => (int)$this->config['quality'],
-                'targets'       => $this->config['targets'],
+                'directories'   => static::$config['directories'],
+                'extension'     => isset(static::$config['extension']) ? static::$config['extension'] : '',
+                'quality'       => (int)static::$config['quality'],
+                'targets'       => static::$config['targets'],
             ];
 
             YII_DEBUG && \Yii::info([$this->itemData], __METHOD__ . '(' . __LINE__ . ') $this->itemData');
@@ -503,11 +503,11 @@ class FileDaemonController extends StreakDaemonController
         $exclude = [];
         // Добавление и сортировка параметров обработки записи
         if ($command &&
-            isset($this->config['commands']) &&
-            false === empty($this->config['commands'][$command])) {
+            isset(static::$config['commands']) &&
+            false === empty(static::$config['commands'][$command])) {
 
-            if (isset($this->config['commands'][$command]['targets'])) {
-                $targets = $this->config['commands'][$command]['targets'];
+            if (isset(static::$config['commands'][$command]['targets'])) {
+                $targets = static::$config['commands'][$command]['targets'];
                 if (false === empty($targets['exclude'])) {
                     $exclude = $targets['exclude'];
                     unset($targets['exclude']);
@@ -525,8 +525,8 @@ class FileDaemonController extends StreakDaemonController
 
         if ($targets) {
             $this->itemData['targets'] += $targets;
-            if (isset($this->config['commands'][$command]['method']['merge'])) {
-                if (empty($this->config['commands'][$command]['method']['merge'])) {
+            if (isset(static::$config['commands'][$command]['method']['merge'])) {
+                if (empty(static::$config['commands'][$command]['method']['merge'])) {
                     $this->itemData['targets'] = $targets;
                 }
             }
@@ -548,7 +548,7 @@ class FileDaemonController extends StreakDaemonController
         $make   = true;
 
         // Контроль наличия файла в архивной базе
-        if (false === empty($path) && (false === isset($this->config['archive']) || (bool)$this->config['archive'])) {
+        if (false === empty($path) && (false === isset(static::$config['archive']) || (bool)static::$config['archive'])) {
             $filePath = FileHelper::normalizePath(
                     \Yii::getAlias(
                         $this->itemData['directories']['target'] . $path
@@ -590,7 +590,7 @@ class FileDaemonController extends StreakDaemonController
                         is_file($file) && unlink($file);
                     }
 
-                    if ($arcResult = $this->component->arcresultOne($this->itemData['file'])) {
+                    if ($arcResult = static::$component->arcresultOne($this->itemData['file'])) {
                         $arcResult->delete();
                     }
                 } else {
@@ -606,7 +606,7 @@ class FileDaemonController extends StreakDaemonController
 
         // Обработка файла
         if ($make) {
-            if ($this->component->getFile($this->itemData['url'], $this->itemData['source'])) {
+            if (static::$component->getFile($this->itemData['url'], $this->itemData['source'])) {
                 $timeDir = FileHelper::normalizePath(
                         \Yii::getAlias(
                             $this->itemData['directories']['web'] . date('/Y/m/d/H/i')
@@ -632,7 +632,7 @@ class FileDaemonController extends StreakDaemonController
                     return $return;
                 }
 
-                if ($this->component->makeFile($this->itemData)) {
+                if (static::$component->makeFile($this->itemData)) {
                     $return = true;
                 }
             }
@@ -652,17 +652,17 @@ class FileDaemonController extends StreakDaemonController
 
             YII_DEBUG && \Yii::info([$itemDst], __METHOD__ . '(' . __LINE__ . ') --- $itemDst');
 
-            $resultModel = $this->component->resultModel($itemDst);
+            $resultModel = static::$component->resultModel($itemDst);
             if ($resultModel->save()) {
                 if ($make) {
-                    YII_DEBUG && \Yii::info([$this->config['archive']], __METHOD__ . '(' . __LINE__ . ') --- archive');
-                    if (false === isset($this->config['archive']) || (bool)$this->config['archive']) {
+                    YII_DEBUG && \Yii::info([static::$config['archive']], __METHOD__ . '(' . __LINE__ . ') --- archive');
+                    if (false === isset(static::$config['archive']) || (bool)static::$config['archive']) {
                         $data = [
                             'name' => $itemDst['file_name'],
                             'path' => $itemDst['time_dir'] . DIRECTORY_SEPARATOR . $itemDst['file_name'],
                         ];
 
-                        $arcresultModel = $this->component->arcresultModel($data);
+                        $arcresultModel = static::$component->arcresultModel($data);
                         $arcresultModel->save();
                     }
                 }

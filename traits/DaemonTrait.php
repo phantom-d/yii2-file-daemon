@@ -12,7 +12,6 @@ use yii\helpers\FileHelper;
  * @method void reloadComponent() Force reload component
  * @method void renewConnections() Force reconnect all connections to database for the component
  * @method array getConfig() Get configuration for current daemon
- * @method string getProcessName() Get name of current process
  *
  * @author Anton Ermolovich <anton.ermolovich@gmail.com>
  */
@@ -22,7 +21,7 @@ trait DaemonTrait
     /**
      * @var array Daemon configuration
      */
-    protected $config = [];
+    protected static $config = [];
 
     /**
      * @var string Directory for substitution in the URL of the file
@@ -75,7 +74,7 @@ trait DaemonTrait
     /**
      * @var \phantomd\filedaemon\FileProcessing FileProcessing component
      */
-    protected $component = null;
+    protected static $component = null;
 
     /**
      * @var string Alias of name for daemon controller
@@ -97,8 +96,8 @@ trait DaemonTrait
 
         $this->getConfig();
 
-        if (false === empty($this->config['commands'])) {
-            foreach ($this->config['commands'] as $name => $value) {
+        if (false === empty(static::$config['commands'])) {
+            foreach (static::$config['commands'] as $name => $value) {
                 if (isset($value['id']) && false === isset($this->commands[(int)$value['id']])) {
                     $this->commands[(int)$value['id']] = $name;
                 }
@@ -117,7 +116,7 @@ trait DaemonTrait
      */
     protected function reloadComponent()
     {
-        $this->component = \phantomd\filedaemon\Component::init($this->config);
+        static::$component = \phantomd\filedaemon\Component::init(static::$config);
     }
 
     /**
@@ -145,8 +144,8 @@ trait DaemonTrait
      */
     public function renewConnections()
     {
-        if ($this->component && $this->component instanceof \phantomd\filedaemon\FileProcessing) {
-            $this->component->renewConnections();
+        if (static::$component && static::$component instanceof \phantomd\filedaemon\FileProcessing) {
+            static::$component->renewConnections();
         }
     }
 
@@ -253,12 +252,14 @@ trait DaemonTrait
                 $params[$this->configName]['directories']['target'] = $this->dirTarget;
             }
 
+            static::$config = $params[$this->configName];
 
-            $this->config     = $params[$this->configName];
-            $this->shortName = $this->configName;
+            if (isset($this->shortName)) {
+                $this->shortName = $this->configName;
+            }
         }
 
-        return $this->config;
+        return static::$config;
     }
 
 }

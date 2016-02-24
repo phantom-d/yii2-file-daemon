@@ -55,7 +55,7 @@ class StreakWebController extends Controller
         $this->configName = empty(static::$configAlias) ? '' : static::$configAlias;
         $this->getConfig();
 
-        if (empty($this->config)) {
+        if (empty(static::$config)) {
             throw new NotFoundHttpException(\Yii::t('yii', 'Unknown daemon ID!'));
         }
 
