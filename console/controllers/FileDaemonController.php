@@ -271,10 +271,8 @@ class FileDaemonController extends StreakDaemonController
         }
 
         if (empty(static::$jobListData)) {
-            $files = FileHelper::findFiles(
-                    \Yii::getAlias(static::$config['directories']['source']), //
-                    ['except' => ['\.gitignore']]
-            );
+            $path  = \Yii::getAlias(static::$config['directories']['source']);
+            $files = FileHelper::findFiles($path, ['except' => ['\.gitignore']]);
             if ($files) {
                 foreach ($files as $file) {
                     if (false === is_dir($file) && 0 === (int)filesize($file)) {
