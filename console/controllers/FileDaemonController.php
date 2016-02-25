@@ -271,7 +271,10 @@ class FileDaemonController extends StreakDaemonController
         }
 
         if (empty(static::$jobListData)) {
-            $files = FileHelper::findFiles(\Yii::getAlias(static::$config['directories']['source']), ['except' => ['\.gitignore']]);
+            $files = FileHelper::findFiles(
+                    \Yii::getAlias(static::$config['directories']['source']), //
+                    ['except' => ['\.gitignore']]
+            );
             if ($files) {
                 foreach ($files as $file) {
                     if (false === is_dir($file) && 0 === (int)filesize($file)) {
@@ -548,7 +551,9 @@ class FileDaemonController extends StreakDaemonController
         $make   = true;
 
         // Контроль наличия файла в архивной базе
-        if (false === empty($path) && (false === isset(static::$config['archive']) || (bool)static::$config['archive'])) {
+        if (false === empty($path) &&
+            (false === isset(static::$config['archive']) || (bool)static::$config['archive'])) {
+
             $filePath = FileHelper::normalizePath(
                     \Yii::getAlias(
                         $this->itemData['directories']['target'] . $path
@@ -655,7 +660,7 @@ class FileDaemonController extends StreakDaemonController
             $resultModel = static::$component->resultModel($itemDst);
             if ($resultModel->save()) {
                 if ($make) {
-                    YII_DEBUG && \Yii::info([static::$config['archive']], __METHOD__ . '(' . __LINE__ . ') --- archive');
+                    YII_DEBUG && \Yii::info([static::$config['archive']], __METHOD__ . '(' . __LINE__ . ')--- archive');
                     if (false === isset(static::$config['archive']) || (bool)static::$config['archive']) {
                         $data = [
                             'name' => $itemDst['file_name'],
