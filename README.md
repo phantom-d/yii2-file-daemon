@@ -13,7 +13,6 @@ Yii2 демон для работы с файлами
 Выполнить команды:
 
 ```
-php composer.phar config repositories.bnmedia-filedaemon '{"type": "git","url": "git@gitlab.bnmedia.ru:develop/yii2-file-daemon.git"}'
 php composer.phar require --prefer-dist phantom-d/yii2-file-daemon "dev-master"
 ```
 
@@ -21,15 +20,6 @@ php composer.phar require --prefer-dist phantom-d/yii2-file-daemon "dev-master"
 
 ```json
 "phantom-d/yii2-file-daemon": "dev-master"
-```
-
-и в секцию **repositories**:
-
-```json
-{
-    "type": "git",
-    "url": "git@gitlab.bnmedia.ru:develop/yii2-file-daemon.git"
-}
 ```
 
  в ваш файл `composer.json`
